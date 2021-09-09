@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "vault-sample",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "mainClass": "com.garage.springboot.Application",
+            "projectName": "vault-sample",
+            "args": "",
+            "vmArgs": "-Djavax.net.ssl.trustStore=/Users/davidmccarty/temp/vault-truststore.jks -Djavax.net.ssl.trustStorePassword=passw0rd"
+        },
+    ]
+}

@@ -1,0 +1,26 @@
+spring.cloud.vault:
+# all spring vault properties
+# ref https://docs.spring.io/spring-cloud-vault/docs/current/reference/html/#common-application-properties
+  enabled: true
+  token: s.JjGXZ9esuONiALa1Rsk53CMQ
+  uri: https://vault.mk.local
+
+  connection-timeout: 2000
+  read-timeout: 5000
+
+  fail-fast: true
+
+  kv:
+    enabled: true
+    backend: secret
+    profile-separator: '/'
+    default-context: application
+    application-name: app-kv
+
+  database:
+    enabled: false
+
+  config.lifecycle:
+    enabled: false
+    min-renewal: 10s
+    expiry-threshold: 20s

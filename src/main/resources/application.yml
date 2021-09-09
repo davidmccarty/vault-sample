@@ -1,0 +1,5 @@
+# Default truststore - need to override this to use only the vault truststore config !!
+#server:
+#  ssl:
+#    trust-store: /Users/davidmccarty/temp/vault-truststore.jks
+#    trust-store-password: passw0rd
