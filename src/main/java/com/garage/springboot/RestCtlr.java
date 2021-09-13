@@ -4,7 +4,7 @@ import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
-import com.garage.pojo.UserPwd;
+import com.garage.data.UserPwd;
 import com.garage.vault.VaultSecretsService;
 import com.garage.vault.VaultTransitService;
 

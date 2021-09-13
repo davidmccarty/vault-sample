@@ -1,5 +1,12 @@
 # Default truststore - need to override this to use only the vault truststore config !!
 #server:
-#  ssl:
-#    trust-store: /Users/davidmccarty/temp/vault-truststore.jks
-#    trust-store-password: passw0rd
+cloud:
+  aws:
+    credentials:
+      accessKey: MY_ACCESS_KEY
+      secretKey: MY_SECRET_KEY
+    region.static: us-east-1
+
+aws-app:
+  aws:
+    service-endpoint: https://example.invalid:9000

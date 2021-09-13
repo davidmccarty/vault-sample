@@ -1,4 +1,4 @@
-package com.garage.pojo;
+package com.garage.data;
 
 public class UserPwd {
     private String username;

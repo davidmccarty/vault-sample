@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch MinioConfig",
+            "request": "launch",
+            "mainClass": "com.garage.cos.MinioConfig",
+            "projectName": "vault-sample"
+        },
+        {
+            "type": "java",
             "name": "vault-sample",
             "request": "launch",
             "cwd": "${workspaceFolder}",
@@ -14,6 +21,6 @@
             "projectName": "vault-sample",
             "args": "",
             "vmArgs": "-Djavax.net.ssl.trustStore=/Users/davidmccarty/temp/vault-truststore.jks -Djavax.net.ssl.trustStorePassword=passw0rd"
-        },
+        }
     ]
 }
