@@ -1,4 +1,4 @@
-package com.garage.springboot;
+package com.garage.spring;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;

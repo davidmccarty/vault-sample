@@ -1,21 +1,16 @@
-spring.cloud.vault:
-# all spring vault properties
+# ##############################################################################################################
+# spring vault properties
 # ref https://docs.spring.io/spring-cloud-vault/docs/current/reference/html/#common-application-properties
+# ##############################################################################################################
+spring.cloud.vault:
   enabled: true
-  token: s.JjGXZ9esuONiALa1Rsk53CMQ
-  uri: https://vault.mk.local
+  token: s.GLZzM7RuuUGzvC5vXOPbb452
+  uri: http://127.0.0.1:8200
 
   connection-timeout: 2000
   read-timeout: 5000
 
   fail-fast: true
-
-  kv:
-    enabled: true
-    backend: secret
-    profile-separator: '/'
-    default-context: application
-    application-name: app-kv
 
   database:
     enabled: false
@@ -24,3 +19,11 @@ spring.cloud.vault:
     enabled: false
     min-renewal: 10s
     expiry-threshold: 20s
+
+# ##############################################################################################################
+# aws connection properties for cos
+# ##############################################################################################################
+cos:
+  endpoint: http://127.0.0.1:9000
+  user: admin
+  password: passw0rd
