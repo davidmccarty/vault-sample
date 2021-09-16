@@ -5,8 +5,6 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 
 import com.garage.cos.MinioS3Client;
 import com.garage.crypt.BouncyCastleService;
@@ -139,31 +137,49 @@ public class RestCtlr {
 		return result;
 	}
 
-	@GetMapping("/vault/encryptLocal")
-	public String encryptLocal() throws URISyntaxException, NoSuchAlgorithmException {
-		System.out.println("###   ENCRYPT LOCAL   ###");
-		Calendar calendar = Calendar.getInstance();
-		SimpleDateFormat formatter = new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss z");
-		byte[] bytes = formatter.format(calendar.getTime()).getBytes();
-		String path = "dev-ring";
-		String result = vaultTransitService.encryptLocal(path, bytes);
-		return "Encryption result = " + result;
-	}
-
-	@PostMapping("/bouncycastle/encrypt")
+	@PostMapping("/bouncycastle/encrypt-string")
 	@ApiOperation("Encrypt string using bouncy castle")
-	public String bcEncrypt(String data) throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
-		System.out.println("###   BOUNCYCASTLE-ENCRYPT   ###");
-		String response = bouncyCastleService.encrypt(data);
+	public String bcEncryptString(
+		@ApiParam(value = "data string to encrypt", required = true, example = "hello world") @RequestParam String data)
+			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
+		System.out.println("###   BOUNCYCASTLE-ENCRYPT-STRING   ###");
+		byte[] bytes = data.getBytes();
+		String response = bouncyCastleService.encrypt(bytes);
 		return response;
 	}
 
-	@PostMapping("/bouncycastle/decrypt")
+	@PostMapping("/bouncycastle/decrypt-string")
 	@ApiOperation("Decrypt string using bouncy castle")
-	public String bcDecrypt(String data) throws NoSuchProviderException, SignatureException, IOException, PGPException {
-		System.out.println("###   BOUNCYCASTLE-DECRYPT   ###");
+	public String bcDecryptString(
+		@ApiParam(value = "data string to encrypt", required = true, type = "textarea",
+				example = "-----BEGIN PGP MESSAGE-----" + "\n" +
+				"Version: BCPG v1.57" + "\n" +
+				"\n" +
+				"hQIMAw8gcUepTD1fAQ/8CpVPp1NUgipNkl/12tpWV1lso5tzyYwJZXtr3kX6WBej" + "\n" +
+				"EPoHhvNuLhZU5XOquGK1qGgdtSH8PYmJrgjdh12anfeSo4yx0ADDb8LsLkeC6cWm" + "\n" +
+				"nIAdRmW5tOfpKoWKMzm4zq5QLoLgoWo5C/xUAtWltiLpnACHrW6jDZNibwze1VHT" + "\n" +
+				"XgHA72fRGHDV2U0PVUFybxR6UoHY62l7E6cJe7nWoRbTqe77a4miaRW3aHQy50b2" + "\n" +
+				"EmmhGCXXjBIWr5w7/rBJzOXSNGWBv0qSNj4YL1SXwMid/skvfb/b8xPH+jGYFsB9" + "\n" +
+				"mTU38faJ5jJoIhSizqU5XgtUb/YYMD7hifWVJkbMAYvDzgubZHGNVFt+pg0OAJy5" + "\n" +
+				"PaNvolzefUUshhw+ebetq35cwz2pMxCAfEwAQkjxK8jJ4CUd2K3BejMQg1SedUkn" + "\n" +
+				"MdeTcE8NqMRuslZny4s9eDSOEhHrdW+Q0a+DsbsK6IDBTxON9X5XnuKVQ8U/ngbZ" + "\n" +
+				"lp3ircvIfVfy1dX24eesU0JQJIoA1wTUabBEVXtN7bsIX53DINc1tqrB1+W6xDvo" + "\n" +
+				"k4jl6Y93BW1jMZuEx3OsdqHriKA4RpuQyWnGQ9i8ZCsKrshFYq7+sHuY4CLaEETg" + "\n" +
+				"WdthxOK9g11UkIokqm/WnAI/p+aWL18bs38BJlBSFUqzbck+x8v7YU0JRKc/hczJ" + "\n" +
+				"KgtAh8VGc8AcoeAqJb8HfKz1R4mEb7Dxb08eFOO+gAsVY6kmqidWVXodQw==" + "\n" +
+				"=oQvo" + "\n" +
+				"-----END PGP MESSAGE-----") @RequestParam String data)
+			throws NoSuchProviderException, SignatureException, IOException, PGPException {
+		System.out.println("###   BOUNCYCASTLE-DECRYPT-STRING   ###");
 		String response = bouncyCastleService.decrypt(data);
 		return response;
 	}
+
+	@GetMapping("/vault/encryptLocal")
+	public String encryptLocal() throws URISyntaxException, NoSuchAlgorithmException {
+		return "Not yet implemented";
+	}
+
+
 
 }
