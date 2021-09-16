@@ -3,8 +3,10 @@ package com.garage.cos;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SignatureException;
 
 import javax.annotation.PostConstruct;
 
@@ -22,7 +24,11 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.garage.crypt.BouncyCastleService;
+import com.garage.vault.VaultTransitService;
 
+import org.bouncycastle.openpgp.PGPException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +36,11 @@ import org.springframework.stereotype.Service;
 public class MinioS3Client {
 
     private AmazonS3 s3Client;
+
+    @Autowired
+    BouncyCastleService bouncyCastleService;
+    @Autowired
+    VaultTransitService vaultTransitService;
 
     @Value("${cos.endpoint}")
     private String cosEndpoint;
@@ -57,7 +68,9 @@ public class MinioS3Client {
     public String uploadString(String bucketName, String keyName, String data) throws IOException {
         System.out.println("Uploading bytes to bucket:" + bucketName + " key:" + keyName);
         ByteArrayInputStream stream = new ByteArrayInputStream(data.getBytes());
-        PutObjectRequest req = new PutObjectRequest(bucketName, keyName, stream, null);
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(data.length());
+        PutObjectRequest req = new PutObjectRequest(bucketName, keyName, stream, metadata);
         PutObjectResult result = s3Client.putObject(req);
         String msg = "Uploaded string with ETag " + result.getETag();
         System.out.println(msg);
@@ -68,10 +81,6 @@ public class MinioS3Client {
         System.out.println("Downloading bytes from bucket:" + bucketName + " key:" + keyName);
         GetObjectRequest req = new GetObjectRequest(bucketName, keyName);
         S3Object object = s3Client.getObject(req);
-        ObjectMetadata metadata = object.getObjectMetadata();
-        System.out.println("Metadata" + "\n"
-                            + "   type: " + metadata.getContentType() + "\n"
-                            + "   user: " + metadata.getUserMetadata());
         S3ObjectInputStream stream = object.getObjectContent();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         int nRead;
@@ -79,22 +88,33 @@ public class MinioS3Client {
         while ((nRead = stream.read(data, 0, data.length)) != -1) {
             buffer.write(data, 0, nRead);
         }
-        System.out.println("Read " + nRead + " bytes in returned buffer");
+        System.out.println("Read " + data.length + " bytes in returned buffer");
         buffer.flush();
         byte[] bytes = buffer.toByteArray();
         stream.close();
-        return new String(bytes);
+        String result = new String(bytes);
+        System.out.println("Downloaded: \n" + result);
+        return result;
     }
 
-    public void uploadEncrypted(String bucketName, String keyName, byte[] bytes, String type) throws IOException {
-        System.out.println("Uploading encrypted bytes to bucket:" + bucketName + " key:" + keyName);
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(type);
-        Map<String,String> userMetadata = new HashMap<String, String>();
-        userMetadata.put("hello","world");
-        metadata.setUserMetadata(userMetadata);
-        PutObjectRequest req = new PutObjectRequest(bucketName, keyName, new ByteArrayInputStream(bytes), metadata);
-        s3Client.putObject(req);
+    public String uploadStringBcEncrypted(String bucket, String key, String data) throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException, IOException, PGPException {
+        String encryptedBlock = bouncyCastleService.encrypt(data.getBytes());
+        return uploadString(bucket, key, encryptedBlock);
+    }
+
+    public String downloadStringBcEncrypted(String bucket, String key) throws NoSuchProviderException, SignatureException, IOException, PGPException {
+        String encryptedBlock = downloadString(bucket, key);
+        return bouncyCastleService.decrypt(encryptedBlock);
+    }
+
+    public String uploadStringTransitEncrypted(String bucket, String key, String data, String path) throws URISyntaxException, IOException {
+        String encryptedBlock = vaultTransitService.encrypt(path, data.getBytes());
+        return uploadString(bucket, key, encryptedBlock);
+    }
+
+    public String downloadStringTransitEncrypted(String bucket, String key, String path) throws IOException {
+        String encryptedBlock = downloadString(bucket, key);
+        return new String(vaultTransitService.decrypt(path, encryptedBlock));
     }
 
 

@@ -40,7 +40,9 @@ public class Decryptor {
 			stringWriter.write(ch);
 		}
 		encryptedInputStream.close();
-		return stringWriter.toString();
+		String result = stringWriter.toString();
+		System.out.println("Decrypted: \n" + result);
+		return result;
 	}
 
 }

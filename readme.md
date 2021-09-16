@@ -96,9 +96,9 @@ $ git clone https://github.com/davidmccarty/vault-sample
    ```sh
    $ export VAULT_ADDR='http://127.0.0.1:8200'
    $ vault operator init -key-shares=1 -key-threshold=1
-   Unseal Key 1: 0EQ7g7swMGLMw+qs7dEoO87xc3HJeG1zqQJYKNBZP2A=
+   Unseal Key 1: vMWCdO8YiTYPEQdNQljjGvJR4DhkT/9d3GAF2W8jgOg=
    
-   Initial Root Token: s.GLZzM7RuuUGzvC5vXOPbb452
+   Initial Root Token: s.Q106iASbvn11NXJNKjj10YCZ
    
    Vault initialized with 1 key shares and a key threshold of 1. Please securely
    distribute the key shares printed above. When the Vault is re-sealed,
@@ -117,7 +117,7 @@ $ git clone https://github.com/davidmccarty/vault-sample
 6. Unseal the vault using values from previous command e.g.
 
    ```sh
-   $ vault operator unseal 0EQ7g7swMGLMw+qs7dEoO87xc3HJeG1zqQJYKNBZP2A=
+   $ vault operator unseal vMWCdO8YiTYPEQdNQljjGvJR4DhkT/9d3GAF2W8jgOg=
    Key                     Value
    ---                     -----
    Seal Type               shamir
@@ -141,7 +141,7 @@ $ git clone https://github.com/davidmccarty/vault-sample
 
    ```sh
    # Set env variables
-   $ export VAULT_TOKEN=s.GLZzM7RuuUGzvC5vXOPbb452
+   $ export VAULT_TOKEN=s.Q106iASbvn11NXJNKjj10YCZ
    $ export VAULT_ADDR='http://127.0.0.1:8200'
    
    # test
@@ -258,7 +258,7 @@ $ git clone https://github.com/davidmccarty/vault-sample
     # all spring vault properties
     # ref https://docs.spring.io/spring-cloud-vault/docs/current/reference/html/#common-application-properties
       enabled: true
-      token: s.GLZzM7RuuUGzvC5vXOPbb452
+      token: s.Q106iASbvn11NXJNKjj10YCZ
       uri: http://127.0.0.1:8200
     
       connection-timeout: 2000
@@ -546,9 +546,17 @@ Run the following test cases as required from  http://localhost:8080/swagger-ui/
 
 ### BouncyCastle: encrypt and decrypt string
 
-
+| API                          | Description                                          |
+| ---------------------------- | ---------------------------------------------------- |
+| /bouncycastle/encrypt-string | Use bouncy castle to encrypt a string using PGP keys |
+| /bouncycastle/decrypt-string | Use bouncy castle to decrypt a string using PGP keys |
 
 ### COS: upload and download string encrypted with PGP
+
+| API                          | Description                                          |
+| ---------------------------- | ---------------------------------------------------- |
+| /bouncycastle/encrypt-string | Use bouncy castle to encrypt a string using PGP keys |
+| /bouncycastle/decrypt-string | Use bouncy castle to decrypt a string using PGP keys |
 
 
 

@@ -64,7 +64,7 @@ public class Encryptor {
 		encryptedFileOutputStream.close();
 
 		String result = encryptedFileOutputStream.toString();
-		System.out.print(result);
+		System.out.print("Encrypted: \n" + result);
 		return result;
 	}
 

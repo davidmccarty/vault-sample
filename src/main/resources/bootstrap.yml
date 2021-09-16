@@ -4,7 +4,7 @@
 # ##############################################################################################################
 spring.cloud.vault:
   enabled: true
-  token: s.GLZzM7RuuUGzvC5vXOPbb452
+  token: s.Q106iASbvn11NXJNKjj10YCZ
   uri: http://127.0.0.1:8200
 
   connection-timeout: 2000
