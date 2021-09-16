@@ -19,6 +19,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 
@@ -53,10 +54,36 @@ public class MinioS3Client {
                 .build();
     }
 
-    public void upload(String bucketName, String keyName, String data) throws IOException {
+    public String uploadString(String bucketName, String keyName, String data) throws IOException {
         System.out.println("Uploading bytes to bucket:" + bucketName + " key:" + keyName);
-        PutObjectRequest req = new PutObjectRequest(bucketName, keyName, data);
-        s3Client.putObject(req);
+        ByteArrayInputStream stream = new ByteArrayInputStream(data.getBytes());
+        PutObjectRequest req = new PutObjectRequest(bucketName, keyName, stream, null);
+        PutObjectResult result = s3Client.putObject(req);
+        String msg = "Uploaded string with ETag " + result.getETag();
+        System.out.println(msg);
+        return msg;
+    }
+
+    public String downloadString(String bucketName, String keyName) throws IOException {
+        System.out.println("Downloading bytes from bucket:" + bucketName + " key:" + keyName);
+        GetObjectRequest req = new GetObjectRequest(bucketName, keyName);
+        S3Object object = s3Client.getObject(req);
+        ObjectMetadata metadata = object.getObjectMetadata();
+        System.out.println("Metadata" + "\n"
+                            + "   type: " + metadata.getContentType() + "\n"
+                            + "   user: " + metadata.getUserMetadata());
+        S3ObjectInputStream stream = object.getObjectContent();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[4];
+        while ((nRead = stream.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        System.out.println("Read " + nRead + " bytes in returned buffer");
+        buffer.flush();
+        byte[] bytes = buffer.toByteArray();
+        stream.close();
+        return new String(bytes);
     }
 
     public void uploadEncrypted(String bucketName, String keyName, byte[] bytes, String type) throws IOException {
@@ -70,31 +97,7 @@ public class MinioS3Client {
         s3Client.putObject(req);
     }
 
-    public String download(String bucketName, String keyName) throws IOException {
-        System.out.println("Downloading bytes from bucket:" + bucketName + " key:" + keyName);
-        GetObjectRequest req = new GetObjectRequest(bucketName, keyName);
-        S3Object object = s3Client.getObject(req);
-        ObjectMetadata metadata = object.getObjectMetadata();
-        System.out.println("Metadata" + "\n"
-                            + "   type: " + metadata.getContentType() + "\n"
-                            + "   user: " + metadata.getUserMetadata());
-        S3ObjectInputStream stream = object.getObjectContent();
 
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
-        int nRead;
-        byte[] data = new byte[4];
-        while ((nRead = stream.read(data, 0, data.length)) != -1) {
-            buffer.write(data, 0, nRead);
-        }
-        buffer.flush();
-        byte[] bytes = buffer.toByteArray();
-
-        stream.close();
-
-        return new String(bytes);
-
-    }
 
 
 }

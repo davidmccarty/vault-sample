@@ -26,10 +26,10 @@ public class VaultTransitService {
         Security.setProperty("crypto.policy", "unlimited");
     }
 
-    public String checkEncryptionPolich() throws NoSuchAlgorithmException{
+    public int checkEncryptionPolich() throws NoSuchAlgorithmException{
         int maxKeySize = javax.crypto.Cipher.getMaxAllowedKeyLength("AES");
         System.out.println("Max Key Size for AES : " + maxKeySize);
-        return Integer.toString(maxKeySize);
+        return maxKeySize;
     }
 
     public String encrypt(String path, byte[] bytes) throws URISyntaxException {

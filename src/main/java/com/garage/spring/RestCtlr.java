@@ -10,7 +10,7 @@ import java.util.Calendar;
 
 import com.garage.cos.MinioS3Client;
 import com.garage.crypt.BouncyCastleService;
-import com.garage.data.UserPwd;
+import com.garage.data.KeyValuePair;
 import com.garage.vault.VaultSecretsService;
 import com.garage.vault.VaultTransitService;
 
@@ -23,10 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 
 @RestController
-@Api(description = "Tests for vault and cos")
+@Api(description = "Sample app for vault and cos")
 public class RestCtlr {
 
 	@Autowired
@@ -45,58 +46,97 @@ public class RestCtlr {
 		return "Greetings from Spring Boot!";
 	}
 
-	@PostMapping("/cos/upload")
-	@ApiOperation("Upload string to cos bucket with key")
-	public String upload(String bucket, String key, String data) throws URISyntaxException, IOException {
-		System.out.println("###   COS-UPLOAD   ###");
-		minioS3Client.upload(bucket, key, data);
-		return "Upload successful";
+	@GetMapping("/java/checkEncryptionPolicy")
+	@ApiOperation("Check java crypto policy is set to unlimited")
+	public String checkEncryptionPolicy() throws NoSuchAlgorithmException {
+		System.out.println("###   CHECK JAVA CRYPTO POLICY   ###");
+		int maxKeyLength = vaultTransitService.checkEncryptionPolich();
+		if(maxKeyLength < 2147483647){
+			return "ERROR: java only supports maxKeyLength " + maxKeyLength;
+		} else {
+			return "OK: java supports maxKeyLength " + maxKeyLength;
+		}
 	}
 
-	@PostMapping("/cos/download")
-	@ApiOperation("Download string from cos bucket at key")
-	public String download(String bucket, String key) throws IOException  {
-		String data = minioS3Client.download(bucket, key);
-		return data;
-	}
-
-	@GetMapping("/vault/put-secret")
-	public String putSecret() throws URISyntaxException {
-		System.out.println("###   PUT-SECRET   ###");
-		Calendar calendar = Calendar.getInstance();
-		String user = "user-" + Integer.toString(calendar.get(Calendar.MINUTE));
-		String pwd = "password-" + Integer.toString(calendar.get(Calendar.SECOND));
-		UserPwd secret = new UserPwd(user, pwd);
-		String path = "secret/spring-vault";
-		vaultSecretsService.putSecret(path, (Object)secret);
+	@PostMapping("/vault/put-kv-secret")
+	@ApiOperation("Put key/value secret to path")
+	public String putSecret(
+			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credential") @RequestParam String path,
+			@ApiParam(value = "secret key", required = true, example = "admin") @RequestParam String key,
+			@ApiParam(value = "secret value", required = true, example = "password") @RequestParam String value)
+			throws URISyntaxException {
+		System.out.println("###   PUT-KV-SECRET   ###");
+		KeyValuePair secret = new KeyValuePair(key, value);
+		vaultSecretsService.putSecret(path, (Object) secret);
 		return "Put secret successful";
 	}
 
-	@GetMapping("/vault/get-secret")
-	public String getSecret() throws URISyntaxException {
-		System.out.println("###   GET-SECRET   ###");
-		String path = "secret/spring-vault";
-		UserPwd userPwd = vaultSecretsService.getSecret(path, UserPwd.class);
-		return "Got secret user=" + userPwd.getUsername() + " password=" + userPwd.getPassword();
+	@PostMapping("/vault/get-kv-secret")
+	@ApiOperation("Get key/value secret from path")
+	public String getSecret(
+			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credential") @RequestParam String path)
+			throws URISyntaxException {
+		System.out.println("###   GET-KV-SECRET   ###");
+		KeyValuePair secret = vaultSecretsService.getSecret(path, KeyValuePair.class);
+		return "Got secret ... " + secret;
 	}
 
-	@GetMapping("/vault/encrypt")
-	public String encrypt() throws URISyntaxException {
-		System.out.println("###   ENCRYPT   ###");
-		Calendar calendar = Calendar.getInstance();
-		SimpleDateFormat formatter = new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss z");
-		byte[] bytes = formatter.format(calendar.getTime()).getBytes();
-		String path = "dev-ring";
+	@PostMapping("/vault/put-file-secret")
+	@ApiOperation("Put key/file secret to path")
+	public String putFileSecret(){
+		return "Not yet implemented";
+	}
+
+	@PostMapping("/vault/get-file-secret")
+	@ApiOperation("Get key/file secret from path")
+	public String getFileSecret() {
+				return "Not yet implemented";
+	}
+
+	@PostMapping("/cos/upload-string")
+	@ApiOperation("Upload string to cos bucket with key")
+	public String upload(
+		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
+		@ApiParam(value = "cos bucket key", required = true, example = "my-key") @RequestParam String key,
+		@ApiParam(value = "data string to store", required = true, example = "hello world") @RequestParam String data)
+			throws URISyntaxException, IOException {
+		System.out.println("###   COS-UPLOAD   ###");
+		String result = minioS3Client.uploadString(bucket, key, data);
+		return result;
+	}
+
+	@PostMapping("/cos/download-string")
+	@ApiOperation("Download string from cos bucket at key")
+	public String download(
+		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
+		@ApiParam(value = "cos bucket key", required = true, example = "my-key") @RequestParam String key)
+			throws IOException  {
+		String data = minioS3Client.downloadString(bucket, key);
+		return data;
+	}
+
+	@PostMapping("/vault/encrypt-string-transit")
+	@ApiOperation("Encrypt string with vault transit keyring")
+	public String encryptStringTransit(
+		@ApiParam(value = "data string to encrypt", required = true, example = "hello world") @RequestParam String data,
+		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
+	 		throws URISyntaxException {
+		System.out.println("###   ENCRYPT-STRING-TRANSIT  ###");
+		byte[] bytes = data.getBytes();
 		String result = vaultTransitService.encrypt(path, bytes);
-		return "Encryption result = " + result;
+		return result;
 	}
 
-	@GetMapping("/vault/decrypt")
-	public String decrypt(@RequestParam String data) throws URISyntaxException {
-		System.out.println("###   DECRYPT   ###");
-		String path = "dev-ring";
+	@PostMapping("/vault/decrypt-string-transit")
+	@ApiOperation("Decrypt string with vault transit keyring")
+	public String decryptStringTransit(
+		@ApiParam(value = "data string to encrypt", required = true,
+			example = "vault:v1:9Q7KWk1/W9StN/92LE5fRY8tyRP2OVtHkFXtbQD6HalbgOVdik+n0CSlDjA=") @RequestParam String data,
+		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
+		 	throws URISyntaxException {
+		System.out.println("###   DECRYPT-STRING-TRANSIT   ###");
 		String result = new String(vaultTransitService.decrypt(path, data));
-		return "Decryption result = " + result;
+		return result;
 	}
 
 	@GetMapping("/vault/encryptLocal")
@@ -106,7 +146,7 @@ public class RestCtlr {
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss z");
 		byte[] bytes = formatter.format(calendar.getTime()).getBytes();
 		String path = "dev-ring";
-		String result = vaultTransitService.encryptLocal(path, bytes);  // TODO
+		String result = vaultTransitService.encryptLocal(path, bytes);
 		return "Encryption result = " + result;
 	}
 

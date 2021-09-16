@@ -20,44 +20,7 @@ $ git clone https://github.com/davidmccarty/vault-sample
 
 
 
-
-
-### 2. Configure Java environment
-
-The project is configured to run with JRE 1.8. There is an issue with key length restrictions if your java is too old.
-
-**Ignore this for now and I'll add a rest API to check the java version is ok at runtime.**
-
-
-
-#### Details for Java cryptography version limitations
-
-If using JDK 8 updates earlier than 8u161 then you need to patch the java crytography security policies:
-
-1. Download zip file here (they are already available in the project under folder `./UnlimitedJCEPolicyJDK8`)
-   https://www.oracle.com/java/technologies/javase-jce8-downloads.html
-2. Overwrite files in your {JAVA_HOME}/lib/security
-   - local_policy.jar
-   - US_export_policy.jar
-     Note that in Java 9, we no longer need to download the policy files package, setting the crypto.policy property to unlimited is enough:
-
-```java
-Security.setProperty("crypto.policy", "unlimited");
-```
-
-and verify in your java app using
-
-```java
-int maxKeySize = javax.crypto.Cipher.getMaxAllowedKeyLength("AES");
-System.out.println("Max Key Size for AES : " + maxKeySize);
-// result should be -->  Max Key Size for AES : 2147483647
-```
-
-
-
-
-
-### 3. Install and Cofigure Vault
+### 2. Install and Cofigure Vault
 
 1. Install vault
 
@@ -318,7 +281,7 @@ System.out.println("Max Key Size for AES : " + maxKeySize);
 
 
 
-### 4. Install and Config Minio
+### 3. Install and Config Minio
 
 Minio will be used a substitute for IBM COS in local testing. It accepts the S3 api from Amazon for the most part.
 
@@ -505,61 +468,104 @@ The following steps describe how to run the project directly in vscode to allow 
     =========|_|==============|___/=/_/_/_/
     :: Spring Boot ::        (v2.3.8.RELEASE)
    
-   2021-09-15 22:10:51.751  INFO 49693 --- [           main] o.s.c.vault.config.VaultConfigTemplate   : Fetching config from Vault at: secret/application
-   2021-09-15 22:10:51.934  INFO 49693 --- [           main] o.s.c.vault.config.VaultConfigTemplate   : Could not locate PropertySource: key not found
-   2021-09-15 22:10:51.935  INFO 49693 --- [           main] b.c.PropertySourceBootstrapConfiguration : Located property source: [BootstrapPropertySource {name='bootstrapProperties-secret/application'}]
-   2021-09-15 22:10:51.939  INFO 49693 --- [           main] com.garage.spring.Application            : No active profile set, falling back to default profiles: default
-   2021-09-15 22:10:52.887  INFO 49693 --- [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=04150484-aeac-31be-840b-b83759eebd8d
-   2021-09-15 22:10:53.115  INFO 49693 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
-   2021-09-15 22:10:53.126  INFO 49693 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-   2021-09-15 22:10:53.126  INFO 49693 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.41]
-   2021-09-15 22:10:53.224  INFO 49693 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-   2021-09-15 22:10:53.224  INFO 49693 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1269 ms
-   Max Key Size for AES : 2147483647
-   2021-09-15 22:11:02.809  INFO 49693 --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoint(s) beneath base path '/actuator'
-   2021-09-15 22:11:03.028  INFO 49693 --- [           main] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
-   2021-09-15 22:11:03.461  INFO 49693 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
-   2021-09-15 22:11:03.712  INFO 49693 --- [           main] com.garage.spring.Application            : Started Application in 13.862 seconds (JVM running for 14.698)
+   2021-09-15 22:34:51.736  INFO 51105 --- [           main] o.s.c.vault.config.VaultConfigTemplate   : Fetching config from Vault at: secret/application
+   2021-09-15 22:34:51.956  INFO 51105 --- [           main] o.s.c.vault.config.VaultConfigTemplate   : Could not locate PropertySource: key not found
+   2021-09-15 22:34:51.957  INFO 51105 --- [           main] b.c.PropertySourceBootstrapConfiguration : Located property source: [BootstrapPropertySource {name='bootstrapProperties-secret/application'}]
+   2021-09-15 22:34:51.961  INFO 51105 --- [           main] com.garage.spring.Application            : No active profile set, falling back to default profiles: default
+   2021-09-15 22:34:52.929  INFO 51105 --- [           main] o.s.cloud.context.scope.GenericScope     : BeanFactory id=04150484-aeac-31be-840b-b83759eebd8d
+   2021-09-15 22:34:53.188  INFO 51105 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+   2021-09-15 22:34:53.199  INFO 51105 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+   2021-09-15 22:34:53.199  INFO 51105 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.41]
+   2021-09-15 22:34:53.304  INFO 51105 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+   2021-09-15 22:34:53.305  INFO 51105 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1329 ms
+   2021-09-15 22:35:11.436  INFO 51105 --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoint(s) beneath base path '/actuator'
+   2021-09-15 22:35:11.611  INFO 51105 --- [           main] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+   2021-09-15 22:35:12.006  INFO 51105 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+   2021-09-15 22:35:12.211  INFO 51105 --- [           main] com.garage.spring.Application            : Started Application in 22.962 seconds (JVM running for 23.527)
    --- READY ---
    ```
 
 3. Open the swagget at. http://localhost:8080/swagger-ui/
    ![image-20210915221821893](readme.assets/image-20210915221821893.png)
 
+4. Test the server is OK by running the **/hello** api
+   ![image-20210915223702176](readme.assets/image-20210915223702176.png)
+
+5. Verify your java version is ok by running the **/java/checkEncryptionPolicy** api
+   ![image-20210915223816428](readme.assets/image-20210915223816428.png)
+
+   If you get an error you will need to update or patch your JRE as described below
+
+   > If using JDK 8 updates earlier than 8u161 then you need to patch the java crytography security policies:
+   >
+   > 1. Download zip file here (they are already available in the project under folder `./UnlimitedJCEPolicyJDK8`)
+   >    https://www.oracle.com/java/technologies/javase-jce8-downloads.html
+   > 2. Overwrite files in your {JAVA_HOME}/lib/security
+   >    - local_policy.jar
+   >    - US_export_policy.jar
+   >      Note that in Java 9, we no longer need to download the policy files package, setting the crypto.policy property to unlimited is enough:
+   >
+   > ```java
+   > Security.setProperty("crypto.policy", "unlimited");
+   > ```
+   >
+   > and verify in your java app using
+   >
+   > ```java
+   > int maxKeySize = javax.crypto.Cipher.getMaxAllowedKeyLength("AES");
+   > System.out.println("Max Key Size for AES : " + maxKeySize);
+   > // result should be -->  Max Key Size for AES : 2147483647
+   > ```
 
 
-### Build project
 
-```sh
-# downlaod dependencies and build target folder
-mcn clean install
-```
+## Use Cases
+
+Run the following test cases as required from  http://localhost:8080/swagger-ui/
+
+### Vault: set and get a key-value secret
+
+| API                  | Description                                                  |
+| -------------------- | ------------------------------------------------------------ |
+| /vault/put-kv-secret | Write a key/value secret to the vault at the specified path  |
+| /vault/get-kv-secret | Read a key/value secret from the vault at the specified path |
+
+### COS: String upload and download string
+
+| API                  | Description                                         |
+| -------------------- | --------------------------------------------------- |
+| /cos/upload-string   | Upload  a string to a specific key in a bucket      |
+| /cos/download-string | Download  a string for a specific key from a bucket |
+
+###  Vault: Transit encrypt and decrypt string
+
+| API                           | Description                                                  |
+| ----------------------------- | ------------------------------------------------------------ |
+| /vault/encrypt-string-transit | Use vault transit to directly encrypt a string using specified keyring |
+| /vault/decrypt-string-transit | Use vault transit to directly decrypt a string using specified keyring |
+
+### BouncyCastle: encrypt and decrypt string
 
 
 
+### COS: upload and download string encrypted with PGP
 
 
 
+### COS: upload and download string encrypted with transit
 
-http://localhost:8080/swagger-ui/
 
-## Requirements
 
-### BouncyCastle
-If using JDK 8 updates earlier than 8u161 then you need to patch the java crytography security policies:
-1. Download zip file here
-    https://www.oracle.com/java/technologies/javase-jce8-downloads.html
-2. Overwrite files in your {JAVA_HOME}/lib/security
-    - local_policy.jar
-    - US_export_policy.jar
-    Note that in Java 9, we no longer need to download the policy files package, setting the crypto.policy property to unlimited is enough:
-```java
-Security.setProperty("crypto.policy", "unlimited");
-```
-and verify in your java app using
-```java
-int maxKeySize = javax.crypto.Cipher.getMaxAllowedKeyLength("AES");
-System.out.println("Max Key Size for AES : " + maxKeySize);
-// result should be -->  Max Key Size for AES : 2147483647
-```
+ ### Vault: Transit encrypt and decrypt string locally with transit datakey
 
+
+
+### COS: upload and download string encrypted locally with transit datakey
+
+
+
+TBD: when above is complete
+
+1. Add support for processing files in pace of strings
+2. Add logstash logigng using BNPP logstash config
+3. Migrate to garage ecosystem on BNPP laptop.
