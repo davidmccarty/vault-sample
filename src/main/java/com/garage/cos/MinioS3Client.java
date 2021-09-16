@@ -117,6 +117,18 @@ public class MinioS3Client {
         return new String(vaultTransitService.decrypt(path, encryptedBlock));
     }
 
+    public String uploadStringTransitLocalEncrypted(String bucket, String key, String data, String path) throws URISyntaxException, IOException {
+        String encryptedBlock = vaultTransitService.encryptLocal(path, data.getBytes());
+        return uploadString(bucket, key, encryptedBlock);
+    }
+
+    public String downloadStringTransitLocalEncrypted(String bucket, String key, String path) throws IOException {
+        // TODO
+        String encryptedBlock = downloadString(bucket, key);
+        // return new String(vaultTransitService.decryptLocal(path, encryptedBlock));
+        return null;
+    }
+
 
 
 

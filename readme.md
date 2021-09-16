@@ -165,7 +165,7 @@ $ git clone https://github.com/davidmccarty/vault-sample
    Raft Applied Index      33
    ```
 
-8. Enable key-alue secrets engine
+8. Enable key-value secrets engine
 
    ```sh
    # enable kv engine - default path will be /secret
@@ -523,12 +523,14 @@ The following steps describe how to run the project directly in vscode to allow 
 
 Run the following test cases as required from  http://localhost:8080/swagger-ui/
 
-### Vault: set and get a key-value secret
+### Vault: set and get secrets
 
-| API                  | Description                                                  |
-| -------------------- | ------------------------------------------------------------ |
-| /vault/put-kv-secret | Write a key/value secret to the vault at the specified path  |
-| /vault/get-kv-secret | Read a key/value secret from the vault at the specified path |
+| API                    | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| /vault/kv/put-secret   | Write a key/value secret to the vault at the specified path  |
+| /vault/kv/get-secret   | Read a key/value secret from the vault at the specified path |
+| /vault/file/get-secret | Get key/file secret from path                                |
+| /vault/file/put-secret | Put key/file secret to path                                  |
 
 ### COS: String upload and download string
 
@@ -541,8 +543,8 @@ Run the following test cases as required from  http://localhost:8080/swagger-ui/
 
 | API                           | Description                                                  |
 | ----------------------------- | ------------------------------------------------------------ |
-| /vault/encrypt-string-transit | Use vault transit to directly encrypt a string using specified keyring |
-| /vault/decrypt-string-transit | Use vault transit to directly decrypt a string using specified keyring |
+| /vault/transit/encrypt-string | Use vault transit to directly encrypt a string using specified keyring |
+| /vault/transit/decrypt-string | Use vault transit to directly decrypt a string using specified keyring |
 
 ### BouncyCastle: encrypt and decrypt string
 
@@ -551,20 +553,44 @@ Run the following test cases as required from  http://localhost:8080/swagger-ui/
 | /bouncycastle/encrypt-string | Use bouncy castle to encrypt a string using PGP keys |
 | /bouncycastle/decrypt-string | Use bouncy castle to decrypt a string using PGP keys |
 
-### COS: upload and download string encrypted with PGP
+### COS: upload and download string encrypted with BouncyCastle PGP
 
-| API                          | Description                                          |
-| ---------------------------- | ---------------------------------------------------- |
-| /bouncycastle/encrypt-string | Use bouncy castle to encrypt a string using PGP keys |
-| /bouncycastle/decrypt-string | Use bouncy castle to decrypt a string using PGP keys |
-
-
+| API                               | Description                                                  |
+| --------------------------------- | ------------------------------------------------------------ |
+| /cos/bc/upload-string-encrypted   | Upload string to cos bucket + key and with data encrypted with bouncy castle before it is stored |
+| /cos/bc/download-string-encrypted | Download string from cos bucket + key and with data decrypted with bouncy castle after it is retrieved |
 
 ### COS: upload and download string encrypted with transit
 
-
+| API                                    | Description                                                  |
+| -------------------------------------- | ------------------------------------------------------------ |
+| /cos/transit/upload-string-encrypted   | Upload string to cos bucket + key and with data encrypted using vault transit keyring |
+| /cos/transit/download-string-encrypted | Download string from cos bucket + key and with data decrypted using vault transit keyring |
 
  ### Vault: Transit encrypt and decrypt string locally with transit datakey
+
+Reference: To create a datakey from cli
+
+```sh
+$ vault write -force transit/datakey/plaintext/vault-sample
+Key            Value
+---            -----
+ciphertext     vault:v1:GAPxMr1GTvRSerw+p9QreSQEAoqBWuFgC/xhnI1tVVmF5E/v1bPSZtMeGs0xJp0YK6mAKi51ceyjlm9n
+key_version    1
+plaintext      SriFI5VLTSTDOHBNU2y8gUCCTpOGVq5cEYmD5kNOgp0=
+
+$ vault write -force transit/datakey/wrapped/vault-sample
+Key            Value
+---            -----
+ciphertext     vault:v1:G/da0Zpa+t5Ar9+iugMmy0gSbUv4HpUIWxMPSms1RT3bP+MTzxcRuNvSwMY6CgfNHZvhQ9UL6mD2MWeN
+key_version    1
+
+$ vault write transit/decrypt/vault-sample ciphertext="vault:v1:GAPxMr1GTvRSerw+p9QreSQEAoqBWuFgC/xhnI1tVVmF5E/v1bPSZtMeGs0xJp0YK6mAKi51ceyjlm9n"
+Key          Value
+---          -----
+plaintext    SriFI5VLTSTDOHBNU2y8gUCCTpOGVq5cEYmD5kNOgp0=
+
+```
 
 
 

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.vault.core.VaultOperations;
 import org.springframework.vault.support.RawTransitKey;
 import org.springframework.vault.support.TransitKeyType;
+import org.springframework.vault.support.VaultTransitContext;
 import org.springframework.vault.support.VaultTransitKey;
 import org.springframework.vault.support.VaultTransitKeyCreationRequest;
 
@@ -52,23 +53,43 @@ public class VaultTransitService {
 
     public String encryptLocal(String path, byte[] bytes) throws URISyntaxException {
 
+        VaultTransitKey keyRing = getKey(path);
+
+        // TODO - tbd
         return null;
     }
 
     public byte[] decryptLocal(String path, byte[] bytes) throws URISyntaxException {
+        // TODO - tbd
         return null;
     }
 
-    public void createKey(String keyName){
+    public void createKey(String keyName, boolean convergentEncryption, boolean exportable){
         // config parameters described here https://www.vaultproject.io/api/secret/transit
         String keyType = "rsa-4096";
         VaultTransitKeyCreationRequest keyRequest = VaultTransitKeyCreationRequest.builder()
-                                                    .convergentEncryption(false)
-                                                    .exportable(true)
+                                                    .convergentEncryption(convergentEncryption)
+                                                    .exportable(exportable)
                                                     .type(keyType)
                                                     .build();
         System.out.println("CreateKey: " + keyName);
         vaultOperations.opsForTransit().createKey(keyName, keyRequest);
+        System.out.println("CreateKey: " + keyName + " created");
+
+    }
+
+    public void generateDataKey(String keyName){
+        // TODO
+        VaultTransitContext ctx = VaultTransitContext.builder()
+                                        .context(null)
+                                        .build();
+
+
+
+
+        System.out.println("CreateKey: " + keyName);
+        String path = "datakey/plaintext/" + keyName;
+        vaultOperations.opsForTransit().createKey(keyName, null);
         System.out.println("CreateKey: " + keyName + " created");
 
     }
@@ -83,7 +104,7 @@ public class VaultTransitService {
         return keyString;
     }
 
-    public String readKey(String keyName) {
+    public VaultTransitKey getKey(String keyName) {
         VaultTransitKey key = vaultOperations.opsForTransit().getKey(keyName);
         String keyString = key.getName() + "\n"
                             + "         latest version :" + key.getLatestVersion() + "\n"
@@ -101,7 +122,8 @@ public class VaultTransitService {
         for(String name :  key.getKeys().keySet()){
             keyString += "                          " + name + "\n";
         }
-        return keyString;
+        System.out.println(keyString);
+        return key;
     }
 
     public void rotateKey() {

@@ -1,5 +1,6 @@
 package com.garage.spring;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
@@ -14,10 +15,17 @@ import com.garage.vault.VaultTransitService;
 
 import org.bouncycastle.openpgp.PGPException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -59,7 +67,7 @@ public class RestCtlr {
 	@PostMapping("/vault/kv/put-secret")
 	@ApiOperation("Put key/value secret to path")
 	public String putSecret(
-			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credential") @RequestParam String path,
+			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credentials") @RequestParam String path,
 			@ApiParam(value = "secret key", required = true, example = "admin") @RequestParam String key,
 			@ApiParam(value = "secret value", required = true, example = "password") @RequestParam String value)
 			throws URISyntaxException {
@@ -72,7 +80,7 @@ public class RestCtlr {
 	@PostMapping("/vault/kv/get-secret")
 	@ApiOperation("Get key/value secret from path")
 	public String getSecret(
-			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credential") @RequestParam String path)
+			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credentials") @RequestParam String path)
 			throws URISyntaxException {
 		System.out.println("\n###   GET-KV-SECRET   ###");
 		KeyValuePair secret = vaultSecretsService.getSecret(path, KeyValuePair.class);
@@ -81,14 +89,32 @@ public class RestCtlr {
 
 	@PostMapping("/vault/file/put-secret")
 	@ApiOperation("Put key/file secret to path")
-	public String putFileSecret(){
-		return "Not yet implemented";
+	public String putFileSecret(
+			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-certificates") @RequestParam String path,
+			@ApiParam(value = "secret key", required = true, example = "garage-private-key.asc") @RequestParam String key,
+			@ApiParam(value = "file to store in secret", required = true) @RequestPart(value = "file") MultipartFile file)
+			throws URISyntaxException, IOException {
+		System.out.println("\n###   PUT-FILE-SECRET   ###");
+		vaultSecretsService.putSecretFile(path, key, file.getBytes());
+		return "Put secret file successful";
 	}
 
 	@PostMapping("/vault/file/get-secret")
 	@ApiOperation("Get key/file secret from path")
-	public String getFileSecret() {
-				return "Not yet implemented";
+	public ResponseEntity<InputStreamResource> getFileSecret(
+			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-certificates") @RequestParam String path,
+			@ApiParam(value = "secret key", required = true, example = "garage-private-key.asc") @RequestParam String key)
+			throws URISyntaxException {
+		System.out.println("\n###   GET-FILE-SECRET   ###");
+		byte[] result = vaultSecretsService.gettSecretFile(path, key);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Type", "application/octet-stream");
+        headers.add("Content-Disposition", "attachment; filename=" + key);
+
+		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(result));
+		headers.setContentLength(result.length);
+		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/string-upload")
@@ -215,15 +241,42 @@ public class RestCtlr {
 	}
 
 	@PostMapping("/cos/transit/download-string-encrypted")
-	@ApiOperation("Download string from cos bucket + key and with data decrypted with bouncy castle after it is retrieved")
+	@ApiOperation("Download string from cos bucket + key and with data decrypted using vault transit keyring")
 	public String downloadTransitDecrypted(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted") @RequestParam String key,
 		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
 			throws IOException, NoSuchProviderException, SignatureException, PGPException  {
-				System.out.println("\n###   COS-UPLOAD-BC-ENCRYPTED   ###");
+				System.out.println("\n###   COS-UPLOAD-TRANSIT-ENCRYPTED   ###");
 		String data = minioS3Client.downloadStringTransitEncrypted(bucket, key, path);
 		return data;
 	}
+
+	@PostMapping("/cos/transit/local/upload-string-encrypted")
+	@ApiOperation("Upload string to cos bucket + key and with data encrypted locally using vault transit datakey")
+	public String uploadTransitLocalEncrypted(
+		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
+		@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted") @RequestParam String key,
+		@ApiParam(value = "data string to store", required = true, example = "hello world") @RequestParam String data,
+		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
+			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
+		System.out.println("\n###   COS-UPLOAD-TRANSIT-LOCAL-ENCRYPTED   ###");
+		String result = minioS3Client.uploadStringTransitLocalEncrypted(bucket, key, data, path);
+		return result;
+	}
+
+	@PostMapping("/cos/transit/local/download-string-encrypted")
+	@ApiOperation("Download string from cos bucket + key and with data decrypted locally using vault transit datakey")
+	public String downloadTransitLocalDecrypted(
+		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
+		@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted") @RequestParam String key,
+		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
+			throws IOException, NoSuchProviderException, SignatureException, PGPException  {
+				System.out.println("\n###   COS-UPLOAD-TRANSIT-LOCAL-ENCRYPTED   ###");
+		String data = minioS3Client.downloadStringTransitLocalEncrypted(bucket, key, path);
+		return data;
+	}
+
+
 
 }
