@@ -41,7 +41,8 @@ public class Decryptor {
 		}
 		encryptedInputStream.close();
 		String result = stringWriter.toString();
-		System.out.println("Decrypted: \n" + result);
+		System.out.println("Decrypt: decrypted \n " +
+            (result.length() < 200 ? result : result.substring(0, 200) + " ..."));
 		return result;
 	}
 

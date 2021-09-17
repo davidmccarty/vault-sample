@@ -65,19 +65,19 @@ public class MinioS3Client {
                 .build();
     }
 
-    public String uploadString(String bucketName, String keyName, String data) throws IOException {
+    public String uploadBytes(String bucketName, String keyName, byte[] bytes) throws IOException {
         System.out.println("Uploading bytes to bucket:" + bucketName + " key:" + keyName);
-        ByteArrayInputStream stream = new ByteArrayInputStream(data.getBytes());
+        ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
         ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(data.length());
+        metadata.setContentLength(bytes.length);
         PutObjectRequest req = new PutObjectRequest(bucketName, keyName, stream, metadata);
         PutObjectResult result = s3Client.putObject(req);
-        String msg = "Uploaded string with ETag " + result.getETag();
+        String msg = "Uploaded data with ETag " + result.getETag();
         System.out.println(msg);
         return msg;
     }
 
-    public String downloadString(String bucketName, String keyName) throws IOException {
+    public byte[] downloadBytes(String bucketName, String keyName) throws IOException {
         System.out.println("Downloading bytes from bucket:" + bucketName + " key:" + keyName);
         GetObjectRequest req = new GetObjectRequest(bucketName, keyName);
         S3Object object = s3Client.getObject(req);
@@ -88,48 +88,65 @@ public class MinioS3Client {
         while ((nRead = stream.read(data, 0, data.length)) != -1) {
             buffer.write(data, 0, nRead);
         }
-        System.out.println("Read " + data.length + " bytes in returned buffer");
+        System.out.println("Read " + buffer.size() + " bytes in returned buffer");
         buffer.flush();
         byte[] bytes = buffer.toByteArray();
         stream.close();
-        String result = new String(bytes);
-        System.out.println("Downloaded: \n" + result);
-        return result;
+        System.out.println("Downloaded bytes size = " + bytes.length);
+        return bytes;
     }
 
     public String uploadStringBcEncrypted(String bucket, String key, String data) throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException, IOException, PGPException {
         String encryptedBlock = bouncyCastleService.encrypt(data.getBytes());
-        return uploadString(bucket, key, encryptedBlock);
+        return uploadBytes(bucket, key, encryptedBlock.getBytes());
     }
 
     public String downloadStringBcEncrypted(String bucket, String key) throws NoSuchProviderException, SignatureException, IOException, PGPException {
-        String encryptedBlock = downloadString(bucket, key);
+        String encryptedBlock = new String(downloadBytes(bucket, key));
         return bouncyCastleService.decrypt(encryptedBlock);
     }
 
     public String uploadStringTransitEncrypted(String bucket, String key, String data, String path) throws URISyntaxException, IOException {
         String encryptedBlock = vaultTransitService.encrypt(path, data.getBytes());
-        return uploadString(bucket, key, encryptedBlock);
+        return uploadBytes(bucket, key, encryptedBlock.getBytes());
     }
 
     public String downloadStringTransitEncrypted(String bucket, String key, String path) throws IOException {
-        String encryptedBlock = downloadString(bucket, key);
+        String encryptedBlock = new String(downloadBytes(bucket, key));
         return new String(vaultTransitService.decrypt(path, encryptedBlock));
     }
 
     public String uploadStringTransitLocalEncrypted(String bucket, String key, String data, String path) throws URISyntaxException, IOException {
         String encryptedBlock = vaultTransitService.encryptLocal(path, data.getBytes());
-        return uploadString(bucket, key, encryptedBlock);
+        return uploadBytes(bucket, key, encryptedBlock.getBytes());
     }
 
     public String downloadStringTransitLocalEncrypted(String bucket, String key, String path) throws IOException {
         // TODO
-        String encryptedBlock = downloadString(bucket, key);
+        String encryptedBlock = new String(downloadBytes(bucket, key));
         // return new String(vaultTransitService.decryptLocal(path, encryptedBlock));
         return null;
     }
 
+    public String uploadFileBcEncrypted(String bucket, String key, byte[] bytes) throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException, IOException, PGPException {
+        String encryptedBlock = bouncyCastleService.encrypt(bytes);
+        return uploadBytes(bucket, key, encryptedBlock.getBytes());
+    }
 
+    public byte[] downloadFileBcEncrypted(String bucket, String key) throws IOException, NoSuchProviderException, SignatureException, PGPException {
+        String encryptedBlock = new String(downloadBytes(bucket, key));
+        return bouncyCastleService.decrypt(encryptedBlock).getBytes();
+    }
+
+    public String uploadFileTransitEncrypted(String bucket, String key, byte[] bytes, String path) throws URISyntaxException, IOException {
+        String encryptedBlock = vaultTransitService.encrypt(path, bytes);
+        return uploadBytes(bucket, key, encryptedBlock.getBytes());
+    }
+
+    public byte[] downloadFileTransitEncrypted(String bucket, String key, String path) throws IOException {
+        String encryptedBlock = new String(downloadBytes(bucket, key));
+        return vaultTransitService.decrypt(path, encryptedBlock);
+    }
 
 
 }

@@ -34,20 +34,18 @@ public class VaultTransitService {
     }
 
     public String encrypt(String path, byte[] bytes) throws URISyntaxException {
-        System.out.println("Encrypt: bytes = " + new String(bytes));
         String data = Base64.getEncoder().encodeToString(bytes);
-        System.out.println("Encrypt: base64 = " + data);
         String result = vaultOperations.opsForTransit().encrypt(path, data);
-        System.out.println("Encrypt: encrypted = " + result);
+        System.out.println("Encrypt: encrypted \n " +
+            (result.length() < 200 ? result : result.substring(0, 200) + " ..."));
         return result;
     }
 
     public byte[] decrypt(String path, String data) {
-        System.out.println("Decrypt: encrypted = " + data);
         String result = vaultOperations.opsForTransit().decrypt(path, data);
-        System.out.println("Decrypt: decrypted = " + result);
         byte[] bytes = Base64.getDecoder().decode(result);
-        System.out.println("Decrypt: decoded = " + new String(bytes));
+        System.out.println("Decrypt: decoded \n " +
+            (bytes.length < 200 ? new String(bytes) : new String(bytes).substring(0, 200) + " ..."));
         return bytes;
     }
 
@@ -83,10 +81,6 @@ public class VaultTransitService {
         VaultTransitContext ctx = VaultTransitContext.builder()
                                         .context(null)
                                         .build();
-
-
-
-
         System.out.println("CreateKey: " + keyName);
         String path = "datakey/plaintext/" + keyName;
         vaultOperations.opsForTransit().createKey(keyName, null);
