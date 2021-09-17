@@ -84,10 +84,6 @@ public class EncryptedInputStream extends InputStream {
 			pgpObject = objectFactory.nextObject();
 		}
 
-		if (pgpObject instanceof PGPOnePassSignatureList) {
-			onePassSignatureList = (PGPOnePassSignatureList) pgpObject;
-			pgpObject = objectFactory.nextObject();
-		}
 
 		if (pgpObject instanceof PGPLiteralData) {
 			PGPLiteralData literalData = (PGPLiteralData) pgpObject;
@@ -97,6 +93,10 @@ public class EncryptedInputStream extends InputStream {
 
 	public int read() throws IOException {
 		return clearTextInputStream.read();
+	}
+
+	public int read(byte[] b, int off, int len) throws java.io.IOException {
+		return clearTextInputStream.read(b, off, len);
 	}
 
 	public void close() throws IOException {

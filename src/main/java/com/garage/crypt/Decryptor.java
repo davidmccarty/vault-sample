@@ -1,10 +1,10 @@
 package com.garage.crypt;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.SignatureException;
@@ -25,7 +25,7 @@ public class Decryptor {
 		this.passphrase = passphrase;
 	}
 
-	public String decrypt(String data)
+	public byte[] decrypt(String data)
 			throws NoSuchProviderException, SignatureException, IOException, PGPException {
 		Security.addProvider(new BouncyCastleProvider());
 
@@ -34,16 +34,23 @@ public class Decryptor {
 
 		ByteArrayInputStream encryptedTextInputStream = new ByteArrayInputStream(data.getBytes());
 		EncryptedInputStream encryptedInputStream = new EncryptedInputStream(encryptedTextInputStream, decryptionKey, passphrase.toCharArray(), provider);
-		StringWriter stringWriter = new StringWriter();
-		int ch;
-		while ((ch = encryptedInputStream.read()) >= 0) {
-			stringWriter.write(ch);
+
+		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+		int nRead;
+		byte[] b = new byte[16384];
+
+		while ((nRead = encryptedInputStream.read(b, 0, b.length)) != -1) {
+  			buffer.write(b, 0, nRead);
 		}
+
+	    buffer.flush();
+	    byte[] bytes = buffer.toByteArray();
 		encryptedInputStream.close();
-		String result = stringWriter.toString();
+
 		System.out.println("Decrypt: decrypted \n " +
-            (result.length() < 200 ? result : result.substring(0, 200) + " ..."));
-		return result;
+            (bytes.length < 200 ? new String(bytes) : new String(bytes).substring(0, 200) + " ..."));
+		return bytes;
 	}
 
 }

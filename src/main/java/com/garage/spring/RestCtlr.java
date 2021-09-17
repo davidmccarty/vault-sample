@@ -170,7 +170,7 @@ public class RestCtlr {
 	}
 
 
-	@PostMapping("/vault/transit/encrypt-string")
+	@PostMapping("/vault/transit/string-encrypt")
 	@ApiOperation("Encrypt string with vault transit keyring")
 	public String encryptStringTransit(
 		@ApiParam(value = "data string to encrypt", required = true, example = "hello world") @RequestParam String data,
@@ -182,7 +182,7 @@ public class RestCtlr {
 		return result;
 	}
 
-	@PostMapping("/vault/transit/decrypt-string")
+	@PostMapping("/vault/transit/string-decrypt")
 	@ApiOperation("Decrypt string with vault transit keyring")
 	public String decryptStringTransit(
 		@ApiParam(value = "data string to encrypt", required = true,
@@ -194,8 +194,45 @@ public class RestCtlr {
 		return result;
 	}
 
+	////////////////////////////
+	@PostMapping("/vault/transit/file-encrypt")
+	@ApiOperation("Encrypt file with vault transit keyring")
+	public ResponseEntity<InputStreamResource> encryptFileTransit(
+		@ApiParam(value = "file to encrypt", required = true) @RequestPart(value = "file") MultipartFile file,
+		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
+	 		throws URISyntaxException, IOException {
+		System.out.println("\n###   ENCRYPT-FILE-TRANSIT  ###");
+		byte[] bytes = file.getBytes();
+		String response = vaultTransitService.encrypt(path, bytes);
 
-	@PostMapping("/bouncycastle/encrypt-string")
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Type", "application/octet-stream");
+		headers.add("Content-Disposition", "attachment; filename=encrypted.txt");
+
+		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response.getBytes()));
+		headers.setContentLength(response.length());
+		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+	}
+
+	@PostMapping("/vault/transit/file-decrypt")
+	@ApiOperation("Decrypt file with vault transit keyring")
+	public ResponseEntity<InputStreamResource> decryptFileTransit(
+		@ApiParam(value = "file to encrypt", required = true) @RequestPart(value = "file") MultipartFile file,
+		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
+		 	throws URISyntaxException, IOException {
+		System.out.println("\n###   DECRYPT-FILE-TRANSIT   ###");
+		byte[] response = vaultTransitService.decrypt(path, new String(file.getBytes()));
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Type", "application/octet-stream");
+		headers.add("Content-Disposition", "attachment; filename=decrypted.bin");
+
+		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response));
+		headers.setContentLength(response.length);
+		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+	}
+
+	@PostMapping("/bouncycastle/string-encrypt")
 	@ApiOperation("Encrypt string using bouncy castle")
 	public String bcEncryptString(
 		@ApiParam(value = "data string to encrypt", required = true, example = "hello world") @RequestParam String data)
@@ -207,7 +244,7 @@ public class RestCtlr {
 	}
 
 	// TODO - fiw swagger copy/paster to input field on multiple lines
-	@PostMapping("/bouncycastle/decrypt-string")
+	@PostMapping("/bouncycastle/string-decrypt")
 	@ApiOperation("Decrypt string using bouncy castle")
 	public String bcDecryptString(
 		@ApiParam(value = "data string to decrypt", required = true,
@@ -230,8 +267,42 @@ public class RestCtlr {
 				"-----END PGP MESSAGE-----") @RequestParam String data)
 			throws NoSuchProviderException, SignatureException, IOException, PGPException {
 		System.out.println("\n###   BOUNCYCASTLE-DECRYPT-STRING   ###");
-		String response = bouncyCastleService.decrypt(data);
-		return response;
+		byte[] response = bouncyCastleService.decrypt(data);
+		return new String(response);
+	}
+
+	@PostMapping("/bouncycastle/file-encrypt")
+	@ApiOperation("Encrypt file using bouncy castle")
+	public ResponseEntity<InputStreamResource> bcEncryptFile(
+		@ApiParam(value = "file to encrypt", required = true) @RequestPart(value = "file") MultipartFile file)
+			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
+		System.out.println("\n###   BOUNCYCASTLE-ENCRYPT-FILE   ###");
+		byte[] bytes = file.getBytes();
+		String response = bouncyCastleService.encrypt(bytes);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Type", "application/octet-stream");
+		headers.add("Content-Disposition", "attachment; filename=encrypted.txt");
+
+		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response.getBytes()));
+		headers.setContentLength(response.length());
+		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+	}
+
+	@PostMapping("/bouncycastle/file-decrypt")
+	@ApiOperation("Decrypt file using bouncy castle")
+	public ResponseEntity<InputStreamResource>  bcDecryptFile(
+		@ApiParam(value = "file to decrypt", required = true) @RequestPart(value = "file") MultipartFile file)
+			throws NoSuchProviderException, SignatureException, IOException, PGPException {
+		System.out.println("\n###   BOUNCYCASTLE-DECRYPT-FILE   ###");
+		byte[] response = bouncyCastleService.decrypt(new String(file.getBytes()));
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Type", "application/octet-stream");
+		headers.add("Content-Disposition", "attachment; filename=decrypted.bin");
+
+		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response));
+		headers.setContentLength(response.length);
+		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/bc/string-upload-encrypted")

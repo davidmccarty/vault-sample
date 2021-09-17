@@ -23,11 +23,11 @@ public class BouncyCastleService {
         return encryptedBlock;
     }
 
-    public String decrypt(String data) throws NoSuchProviderException, SignatureException, IOException, PGPException {
+    public byte[] decrypt(String data) throws NoSuchProviderException, SignatureException, IOException, PGPException {
         String pathPrivateKey = new ClassPathResource(ENCRYPTION_PRIVATE_KEY_FILE).getFile().getAbsolutePath();
         Decryptor decryptor = new Decryptor(pathPrivateKey, ENCRYPTION_PASS_PHRASE);
-        String decryptedText = decryptor.decrypt(data);
-        return decryptedText;
+        byte[] decryptedBytes = decryptor.decrypt(data);
+        return decryptedBytes;
     }
 
 }

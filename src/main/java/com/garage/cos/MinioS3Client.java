@@ -103,7 +103,8 @@ public class MinioS3Client {
 
     public String downloadStringBcEncrypted(String bucket, String key) throws NoSuchProviderException, SignatureException, IOException, PGPException {
         String encryptedBlock = new String(downloadBytes(bucket, key));
-        return bouncyCastleService.decrypt(encryptedBlock);
+        byte[] bytes = bouncyCastleService.decrypt(encryptedBlock);
+        return new String(bytes);
     }
 
     public String uploadStringTransitEncrypted(String bucket, String key, String data, String path) throws URISyntaxException, IOException {
@@ -135,7 +136,7 @@ public class MinioS3Client {
 
     public byte[] downloadFileBcEncrypted(String bucket, String key) throws IOException, NoSuchProviderException, SignatureException, PGPException {
         String encryptedBlock = new String(downloadBytes(bucket, key));
-        return bouncyCastleService.decrypt(encryptedBlock).getBytes();
+        return bouncyCastleService.decrypt(encryptedBlock);
     }
 
     public String uploadFileTransitEncrypted(String bucket, String key, byte[] bytes, String path) throws URISyntaxException, IOException {
