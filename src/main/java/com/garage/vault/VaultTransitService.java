@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.vault.core.VaultOperations;
 import org.springframework.vault.support.RawTransitKey;
 import org.springframework.vault.support.TransitKeyType;
-import org.springframework.vault.support.VaultTransitContext;
 import org.springframework.vault.support.VaultTransitKey;
 import org.springframework.vault.support.VaultTransitKeyCreationRequest;
 
@@ -49,19 +48,6 @@ public class VaultTransitService {
         return bytes;
     }
 
-    public String encryptLocal(String path, byte[] bytes) throws URISyntaxException {
-
-        VaultTransitKey keyRing = getKey(path);
-
-        // TODO - tbd
-        return null;
-    }
-
-    public byte[] decryptLocal(String path, byte[] bytes) throws URISyntaxException {
-        // TODO - tbd
-        return null;
-    }
-
     public void createKey(String keyName, boolean convergentEncryption, boolean exportable){
         // config parameters described here https://www.vaultproject.io/api/secret/transit
         String keyType = "rsa-4096";
@@ -72,18 +58,6 @@ public class VaultTransitService {
                                                     .build();
         System.out.println("CreateKey: " + keyName);
         vaultOperations.opsForTransit().createKey(keyName, keyRequest);
-        System.out.println("CreateKey: " + keyName + " created");
-
-    }
-
-    public void generateDataKey(String keyName){
-        // TODO
-        VaultTransitContext ctx = VaultTransitContext.builder()
-                                        .context(null)
-                                        .build();
-        System.out.println("CreateKey: " + keyName);
-        String path = "datakey/plaintext/" + keyName;
-        vaultOperations.opsForTransit().createKey(keyName, null);
         System.out.println("CreateKey: " + keyName + " created");
 
     }

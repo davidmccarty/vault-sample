@@ -117,18 +117,6 @@ public class MinioS3Client {
         return new String(vaultTransitService.decrypt(path, encryptedBlock));
     }
 
-    public String uploadStringTransitLocalEncrypted(String bucket, String key, String data, String path) throws URISyntaxException, IOException {
-        String encryptedBlock = vaultTransitService.encryptLocal(path, data.getBytes());
-        return uploadBytes(bucket, key, encryptedBlock.getBytes());
-    }
-
-    public String downloadStringTransitLocalEncrypted(String bucket, String key, String path) throws IOException {
-        // TODO
-        String encryptedBlock = new String(downloadBytes(bucket, key));
-        // return new String(vaultTransitService.decryptLocal(path, encryptedBlock));
-        return null;
-    }
-
     public String uploadFileBcEncrypted(String bucket, String key, byte[] bytes) throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException, IOException, PGPException {
         String encryptedBlock = bouncyCastleService.encrypt(bytes);
         return uploadBytes(bucket, key, encryptedBlock.getBytes());

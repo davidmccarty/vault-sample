@@ -417,31 +417,4 @@ public class RestCtlr {
 		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
 	}
 
-	@PostMapping("/cos/transit/local/string-upload-encrypted")
-	@ApiOperation("Upload string to cos bucket + key and with data encrypted locally using vault transit datakey")
-	public String uploadTransitLocalStringEncrypted(
-		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
-		@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted") @RequestParam String key,
-		@ApiParam(value = "data string to store", required = true, example = "hello world") @RequestParam String data,
-		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
-			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
-		System.out.println("\n###   COS-UPLOAD-TRANSIT-LOCAL-ENCRYPTED   ###");
-		String result = minioS3Client.uploadStringTransitLocalEncrypted(bucket, key, data, path);
-		return result;
-	}
-
-	@PostMapping("/cos/transit/local/string-download-encrypted")
-	@ApiOperation("Download string from cos bucket + key and with data decrypted locally using vault transit datakey")
-	public String downloadTransitLocalDecrypted(
-		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
-		@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted") @RequestParam String key,
-		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
-			throws IOException, NoSuchProviderException, SignatureException, PGPException  {
-				System.out.println("\n###   COS-UPLOAD-TRANSIT-LOCAL-ENCRYPTED   ###");
-		String data = minioS3Client.downloadStringTransitLocalEncrypted(bucket, key, path);
-		return data;
-	}
-
-
-
 }
