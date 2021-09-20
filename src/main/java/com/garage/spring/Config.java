@@ -1,9 +1,9 @@
 package com.garage.spring;
 
-import com.garage.cos.MinioS3Client;
+import com.garage.cos.S3Client;
 import com.garage.vault.VaultSecretsService;
 import com.garage.vault.VaultTransitService;
-import com.garage.crypt.BouncyCastleService;
+import com.garage.crypt.BCCrypt;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +22,12 @@ public class Config {
 	}
 
 	@Bean
-	public MinioS3Client minioS3Client() {
-		return new MinioS3Client();
+	public S3Client minioS3Client() {
+		return new S3Client();
 	}
 
 	@Bean
-	public BouncyCastleService bouncyCastleService(){
-		return new BouncyCastleService();
+	public BCCrypt bouncyCastleService(){
+		return new BCCrypt();
 	}
 }

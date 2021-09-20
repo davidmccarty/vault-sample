@@ -12,13 +12,17 @@ import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Encryptor {
 
+	private static final Logger LOG = LoggerFactory.getLogger(BCCrypt.class);
+
+	// TODO - properties file for these values
 	private String encryptionPublicKey;
 	private String provider = "BC";
 	private String dummyFilename = "dummy.txt";
-
 
 	public Encryptor(String encryptionPublicKey) {
 		super();
@@ -30,6 +34,7 @@ public class Encryptor {
 		Security.addProvider(new BouncyCastleProvider());
 		// Read public PGP key from asc file
 		PGPPublicKey encryptionKey = Utils.readPublicKey(encryptionPublicKey);
+		LOG.debug("Resolved encryption key from: {} with keyId: {}", encryptionPublicKey, encryptionKey.getKeyID());
 
 		// Stream processing order:
 		// bytes
@@ -64,8 +69,7 @@ public class Encryptor {
 		encryptedFileOutputStream.close();
 
 		String result = encryptedFileOutputStream.toString();
-		System.out.println("Encrypt: encrypted \n " +
-            (result.length() < 200 ? result : result.substring(0, 200) + " ..."));
+		LOG.debug("Wrote encrypted slring length: {}", result.length());
 		return result;
 	}
 

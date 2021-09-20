@@ -1,5 +1,7 @@
 package com.garage.spring;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,6 +14,8 @@ import org.springframework.context.annotation.Bean;
  * Application: Entry point to bootstrap spring application
  */
 public class Application {
+
+	private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
 	/**
 	 * Application main method
@@ -31,7 +35,7 @@ public class Application {
 	@Bean
 	public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
 		return args -> {
-			System.out.println("--- READY ---");
+			LOG.info("### Application started successully ###");
 		};
 	}
 

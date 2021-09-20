@@ -24,21 +24,25 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.garage.crypt.BouncyCastleService;
+import com.garage.crypt.BCCrypt;
 import com.garage.vault.VaultTransitService;
 
 import org.bouncycastle.openpgp.PGPException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MinioS3Client {
+public class S3Client {
+
+    private static final Logger LOG = LoggerFactory.getLogger(S3Client.class);
 
     private AmazonS3 s3Client;
 
     @Autowired
-    BouncyCastleService bouncyCastleService;
+    BCCrypt bouncyCastleService;
     @Autowired
     VaultTransitService vaultTransitService;
 
@@ -52,6 +56,7 @@ public class MinioS3Client {
 
     @PostConstruct
     private void connect(){
+        // TODO - align this with BNPP propserty names
         AWSCredentials credentials = new BasicAWSCredentials(cosUser, cosPassword);
         ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.setSignerOverride("AWSS3V4SignerType");
@@ -63,22 +68,23 @@ public class MinioS3Client {
                 .withClientConfiguration(clientConfiguration)
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
                 .build();
+        LOG.info("Initialized S3Cliset with endpoint: {}", cosEndpoint);
     }
 
     public String uploadBytes(String bucketName, String keyName, byte[] bytes) throws IOException {
-        System.out.println("Uploading bytes to bucket:" + bucketName + " key:" + keyName);
+        LOG.debug("Uploading bytes to bucket:{}  key:{}", bucketName, keyName);
         ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(bytes.length);
         PutObjectRequest req = new PutObjectRequest(bucketName, keyName, stream, metadata);
         PutObjectResult result = s3Client.putObject(req);
         String msg = "Uploaded data with ETag " + result.getETag();
-        System.out.println(msg);
+        LOG.debug(msg);
         return msg;
     }
 
     public byte[] downloadBytes(String bucketName, String keyName) throws IOException {
-        System.out.println("Downloading bytes from bucket:" + bucketName + " key:" + keyName);
+        LOG.debug("Downloading bytes from bucket:{} key:{}", bucketName, keyName);
         GetObjectRequest req = new GetObjectRequest(bucketName, keyName);
         S3Object object = s3Client.getObject(req);
         S3ObjectInputStream stream = object.getObjectContent();
@@ -88,11 +94,10 @@ public class MinioS3Client {
         while ((nRead = stream.read(data, 0, data.length)) != -1) {
             buffer.write(data, 0, nRead);
         }
-        System.out.println("Read " + buffer.size() + " bytes in returned buffer");
         buffer.flush();
         byte[] bytes = buffer.toByteArray();
         stream.close();
-        System.out.println("Downloaded bytes size = " + bytes.length);
+        LOG.debug("Downloaded bytes size: {}", bytes.length);
         return bytes;
     }
 

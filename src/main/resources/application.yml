@@ -1,2 +1,13 @@
 logging.level:
-    root: TRACE
+    root: INFO
+    com.garage.*: DEBUG
+
+server:
+    port: 8080
+    ssl.enabled: false
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB

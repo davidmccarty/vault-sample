@@ -7,6 +7,8 @@ import java.util.Base64;
 
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.vault.core.VaultOperations;
@@ -18,6 +20,8 @@ import org.springframework.vault.support.VaultTransitKeyCreationRequest;
 @Service
 public class VaultTransitService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(VaultTransitService.class);
+
     @Autowired
     private VaultOperations vaultOperations;
 
@@ -26,25 +30,25 @@ public class VaultTransitService {
         Security.setProperty("crypto.policy", "unlimited");
     }
 
-    public int checkEncryptionPolich() throws NoSuchAlgorithmException{
+    public int checkEncryptionPolicy() throws NoSuchAlgorithmException{
         int maxKeySize = javax.crypto.Cipher.getMaxAllowedKeyLength("AES");
-        System.out.println("Max Key Size for AES : " + maxKeySize);
+        LOG.debug("Max Key Size for AES : {}", maxKeySize);
         return maxKeySize;
     }
 
     public String encrypt(String path, byte[] bytes) throws URISyntaxException {
+        LOG.debug("Encrypt {} bytes using keyring {}", bytes.length, path);
         String data = Base64.getEncoder().encodeToString(bytes);
         String result = vaultOperations.opsForTransit().encrypt(path, data);
-        System.out.println("Encrypt: encrypted \n " +
-            (result.length() < 200 ? result : result.substring(0, 200) + " ..."));
+        LOG.debug("Wrote encrypted string length: {}", result.length());
         return result;
     }
 
     public byte[] decrypt(String path, String data) {
+        LOG.debug("Decrypt {} characters using keyring {}", data.length(), path);
         String result = vaultOperations.opsForTransit().decrypt(path, data);
         byte[] bytes = Base64.getDecoder().decode(result);
-        System.out.println("Decrypt: decoded \n " +
-            (bytes.length < 200 ? new String(bytes) : new String(bytes).substring(0, 200) + " ..."));
+        LOG.debug("Wrote encrypted bytes length: {}", bytes.length);
         return bytes;
     }
 
@@ -56,9 +60,9 @@ public class VaultTransitService {
                                                     .exportable(exportable)
                                                     .type(keyType)
                                                     .build();
-        System.out.println("CreateKey: " + keyName);
+        LOG.debug("CreateKey: {} of type: {}", keyName, keyType);
         vaultOperations.opsForTransit().createKey(keyName, keyRequest);
-        System.out.println("CreateKey: " + keyName + " created");
+        LOG.debug("Key: {} created", keyName);
 
     }
 
@@ -69,45 +73,13 @@ public class VaultTransitService {
             String value = key.getKeys().get(name);
             keyString += "   " + name + ": " + value +  "\n";
         }
+        LOG.debug("Key: {} exported", keyName);
         return keyString;
     }
 
     public VaultTransitKey getKey(String keyName) {
         VaultTransitKey key = vaultOperations.opsForTransit().getKey(keyName);
-        String keyString = key.getName() + "\n"
-                            + "         latest version :" + key.getLatestVersion() + "\n"
-                            + "                   type :" + key.getType() + "\n"
-                            + "    min decrypt version :" + key.getMinDecryptionVersion() + "\n"
-                            + "    min encrypt version :" + key.getMinEncryptionVersion() + "\n"
-                            + "      isDeletionAllowed :" + key.isDeletionAllowed() + "\n"
-                            + "              isDerived :" + key.isDerived() + "\n"
-                            + "           isExportable :" + key.isExportable() + "\n"
-                            + "     supportsDecryption :" + key.supportsDecryption() + "\n"
-                            + "     supportsDerivation :" + key.supportsDerivation() + "\n"
-                            + "     supportsEncryption :" + key.supportsEncryption() + "\n"
-                            + "      supportsSigning() :" + key.supportsSigning() + "\n"
-                            + "                   keys :" + "\n";
-        for(String name :  key.getKeys().keySet()){
-            keyString += "                          " + name + "\n";
-        }
-        System.out.println(keyString);
         return key;
     }
-
-    public void rotateKey() {
-    }
-
-    public void deleteKey() {
-    }
-
-    public void rewrapData() {
-    }
-
-    public void generateDataKey() {
-    }
-
-
-
-
 
 }

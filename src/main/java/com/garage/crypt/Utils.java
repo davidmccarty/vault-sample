@@ -16,11 +16,16 @@ import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class Utils {
 
-	public static PGPPublicKey readPublicKey(String publicKeyFilePath) throws IOException, PGPException {
+	private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
 
-		InputStream keyInputStrem = new FileInputStream(new File(publicKeyFilePath));
+	public static PGPPublicKey readPublicKey(String filePath) throws IOException, PGPException {
+
+		InputStream keyInputStrem = new FileInputStream(new File(filePath));
 
 		InputStream in = PGPUtil.getDecoderStream(keyInputStrem);
 		PGPPublicKeyRingCollection pgpPub = new PGPPublicKeyRingCollection(in, new JcaKeyFingerprintCalculator());
@@ -39,7 +44,8 @@ public abstract class Utils {
 		}
 
 		if (key == null) {
-			throw new IllegalArgumentException("Can't find encryption key in key ring.");
+			LOG.error("Can't find encryption key in key ring: {}", filePath);
+			throw new IllegalArgumentException("Can't find encryption key in key ring: " + filePath);
 		}
 		in.close();
 		keyInputStrem.close();
@@ -47,7 +53,9 @@ public abstract class Utils {
 		return key;
 	}
 
-	public static PGPSecretKey findSecretKey(InputStream in) throws IOException, PGPException {
+	// TODO - change this to get private key from secret key
+	public static PGPSecretKey findSecretKey(String filePath) throws IOException, PGPException {
+		InputStream in = new FileInputStream(new File(filePath));
 		in = PGPUtil.getDecoderStream(in);
 		PGPSecretKeyRingCollection pgpSec = new PGPSecretKeyRingCollection(in, new JcaKeyFingerprintCalculator());
 
@@ -67,7 +75,8 @@ public abstract class Utils {
 		}
 
 		if (key == null) {
-			throw new IllegalArgumentException("Can't find signing key in key ring.");
+			LOG.error("Can't find decryption key in key ring: {}", filePath);
+			throw new IllegalArgumentException("Can't find decryption key in key ring.");
 		}
 		in.close();
 		return key;

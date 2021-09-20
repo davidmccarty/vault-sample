@@ -2,8 +2,6 @@ package com.garage.crypt;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
@@ -12,9 +10,14 @@ import java.security.SignatureException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPSecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Decryptor {
 
+	private static final Logger LOG = LoggerFactory.getLogger(Decryptor.class);
+
+	/// TODO - move to properties
 	private String privateKeyFilePath;
 	private String passphrase;
 	private String provider = "BC";
@@ -30,7 +33,8 @@ public class Decryptor {
 		Security.addProvider(new BouncyCastleProvider());
 
 		// Read private PGP key from asc file
-		PGPSecretKey decryptionKey = Utils.findSecretKey(new FileInputStream(new File(privateKeyFilePath)));
+		PGPSecretKey decryptionKey = Utils.findSecretKey(privateKeyFilePath);
+		LOG.debug("Resolved decryption key from: {} with keyId: {}", privateKeyFilePath, decryptionKey.getKeyID());
 
 		ByteArrayInputStream encryptedTextInputStream = new ByteArrayInputStream(data.getBytes());
 		EncryptedInputStream encryptedInputStream = new EncryptedInputStream(encryptedTextInputStream, decryptionKey, passphrase.toCharArray(), provider);
@@ -38,7 +42,7 @@ public class Decryptor {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
 		int nRead;
-		byte[] b = new byte[16384];
+		byte[] b = new byte[4];
 
 		while ((nRead = encryptedInputStream.read(b, 0, b.length)) != -1) {
   			buffer.write(b, 0, nRead);
@@ -47,9 +51,7 @@ public class Decryptor {
 	    buffer.flush();
 	    byte[] bytes = buffer.toByteArray();
 		encryptedInputStream.close();
-
-		System.out.println("Decrypt: decrypted \n " +
-            (bytes.length < 200 ? new String(bytes) : new String(bytes).substring(0, 200) + " ..."));
+		LOG.debug("Wrote encrypted bytes length: {}", bytes.length);
 		return bytes;
 	}
 
