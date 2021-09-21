@@ -525,81 +525,59 @@ Run the following test cases as required from  http://localhost:8080/swagger-ui/
 
 ### Vault: set and get secrets
 
-| API                    | Description                                                  |
-| ---------------------- | ------------------------------------------------------------ |
-| /vault/kv/put-secret   | Write a key/value secret to the vault at the specified path  |
-| /vault/kv/get-secret   | Read a key/value secret from the vault at the specified path |
-| /vault/file/get-secret | Get key/file secret from path                                |
-| /vault/file/put-secret | Put key/file secret to path                                  |
+| API                         | Description                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| /vault/kv/string-put-secret | Write a key/value secret to the vault at the specified path  |
+| /vault/kv/string-get-secret | Read a key/value secret from the vault at the specified path |
+| /vault/file/get-secret      | Get key/file secret from path                                |
+| /vault/file/put-secret      | Put key/file secret to path                                  |
 
 ### COS: String upload and download string
 
 | API                  | Description                                         |
 | -------------------- | --------------------------------------------------- |
-| /cos/upload-string   | Upload  a string to a specific key in a bucket      |
-| /cos/download-string | Download  a string for a specific key from a bucket |
-
-###  Vault: Transit encrypt and decrypt string
-
-| API                           | Description                                                  |
-| ----------------------------- | ------------------------------------------------------------ |
-| /vault/transit/encrypt-string | Use vault transit to directly encrypt a string using specified keyring |
-| /vault/transit/decrypt-string | Use vault transit to directly decrypt a string using specified keyring |
+| /cos/string-upload   | Upload  a string to a specific key in a bucket      |
+| /cos/string-download | Download  a string for a specific key from a bucket |
+| /cos/file-download   | Upload  a file to a specific key in a bucket        |
+| /cos/file-download   | Download  a file for a specific key from a bucket   |
 
 ### BouncyCastle: encrypt and decrypt string
 
 | API                          | Description                                          |
 | ---------------------------- | ---------------------------------------------------- |
-| /bouncycastle/encrypt-string | Use bouncy castle to encrypt a string using PGP keys |
-| /bouncycastle/decrypt-string | Use bouncy castle to decrypt a string using PGP keys |
+| /bouncycastle/string-encrypt | Use bouncy castle to encrypt a string using PGP keys |
+| /bouncycastle/string-decrypt | Use bouncy castle to decrypt a string using PGP keys |
+| /bouncycastle/file-encrypt   | Use bouncy castle to encrypt a file using PGP keys   |
+| /bouncycastle/file-decrypt   | Use bouncy castle to decrypt a file using PGP keys   |
+
+
 
 ### COS: upload and download string encrypted with BouncyCastle PGP
 
 | API                               | Description                                                  |
 | --------------------------------- | ------------------------------------------------------------ |
-| /cos/bc/upload-string-encrypted   | Upload string to cos bucket + key and with data encrypted with bouncy castle before it is stored |
-| /cos/bc/download-string-encrypted | Download string from cos bucket + key and with data decrypted with bouncy castle after it is retrieved |
+| /cos/bc/string-upload-encrypted   | Upload string to cos bucket + key and with data encrypted with bouncy castle before it is stored |
+| /cos/bc/string-download-encrypted | Download string from cos bucket + key and with data decrypted with bouncy castle after it is retrieved |
+| /cos/bc/file-upload-encrypted     | Upload file to cos bucket + key and with data encrypted with bouncy castle before it is stored |
+| /cos/bc/file-download-encrypted   | Download file from cos bucket + key and with data decrypted with bouncy castle after it is retrieved |
+
+###  Vault: Transit encrypt and decrypt string
+
+| API                           | Description                                                  |
+| ----------------------------- | ------------------------------------------------------------ |
+| /vault/transit/string-encrypt | Use vault transit to directly encrypt a string using specified keyring |
+| /vault/transit/string-decrypt | Use vault transit to directly decrypt a string using specified keyring |
+| /vault/transit/file-encrypt   | Use vault transit to directly encrypt a file using specified keyring |
+| /vault/transit/file-decrypt   | Use vault transit to directly decrypt a file using specified keyring |
+
+
 
 ### COS: upload and download string encrypted with transit
 
 | API                                    | Description                                                  |
 | -------------------------------------- | ------------------------------------------------------------ |
-| /cos/transit/upload-string-encrypted   | Upload string to cos bucket + key and with data encrypted using vault transit keyring |
-| /cos/transit/download-string-encrypted | Download string from cos bucket + key and with data decrypted using vault transit keyring |
+| /cos/transit/string-upload-encrypted   | Upload string to cos bucket + key and with data encrypted using vault transit keyring |
+| /cos/transit/string-download-encrypted | Download string from cos bucket + key and with data decrypted using vault transit keyring |
+| /cos/transit/file-upload-encrypted     | Upload file to cos bucket + key and with data encrypted using vault transit keyring |
+| /cos/transit/file-download-encrypted   | Download file from cos bucket + key and with data decrypted using vault transit keyring |
 
- ### Vault: Transit encrypt and decrypt string locally with transit datakey
-
-Reference: To create a datakey from cli
-
-```sh
-$ vault write -force transit/datakey/plaintext/vault-sample
-Key            Value
----            -----
-ciphertext     vault:v1:GAPxMr1GTvRSerw+p9QreSQEAoqBWuFgC/xhnI1tVVmF5E/v1bPSZtMeGs0xJp0YK6mAKi51ceyjlm9n
-key_version    1
-plaintext      SriFI5VLTSTDOHBNU2y8gUCCTpOGVq5cEYmD5kNOgp0=
-
-$ vault write -force transit/datakey/wrapped/vault-sample
-Key            Value
----            -----
-ciphertext     vault:v1:G/da0Zpa+t5Ar9+iugMmy0gSbUv4HpUIWxMPSms1RT3bP+MTzxcRuNvSwMY6CgfNHZvhQ9UL6mD2MWeN
-key_version    1
-
-$ vault write transit/decrypt/vault-sample ciphertext="vault:v1:GAPxMr1GTvRSerw+p9QreSQEAoqBWuFgC/xhnI1tVVmF5E/v1bPSZtMeGs0xJp0YK6mAKi51ceyjlm9n"
-Key          Value
----          -----
-plaintext    SriFI5VLTSTDOHBNU2y8gUCCTpOGVq5cEYmD5kNOgp0=
-
-```
-
-
-
-### COS: upload and download string encrypted locally with transit datakey
-
-
-
-TBD: when above is complete
-
-1. Add support for processing files in pace of strings
-2. Add logstash logigng using BNPP logstash config
-3. Migrate to garage ecosystem on BNPP laptop.

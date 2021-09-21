@@ -21,6 +21,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,26 +52,29 @@ public class RestCtlr {
 
 	@GetMapping("/hello")
 	@ApiOperation("Check server is alive")
-	public String index() {
+	public ResponseEntity<String> index() {
 		LOG.info("RestApi: HELLO-WORLD   ");
-		return "Greetings from Spring Boot!";
+		String msg = "Hello from Spring Boot!";
+		return rspString(msg, HttpStatus.OK);
 	}
 
 	@GetMapping("/java/checkEncryptionPolicy")
 	@ApiOperation("Check java crypto policy is set to unlimited")
-	public String checkEncryptionPolicy() throws NoSuchAlgorithmException {
+	public ResponseEntity<String> checkEncryptionPolicy() throws NoSuchAlgorithmException {
 		LOG.info("RestApi: CHECK-JAVA-CRYPTO-POLICY   ");
 		int maxKeyLength = vaultTransitService.checkEncryptionPolicy();
 		if(maxKeyLength < 2147483647){
-			return "ERROR: java only supports maxKeyLength " + maxKeyLength;
+			String msg = "ERROR: java only supports maxKeyLength " + maxKeyLength + "\n upgrade JRE as described here https://www.oracle.com/java/technologies/javase-jce8-downloads.html";
+			return rspString(msg, HttpStatus.NOT_ACCEPTABLE);
 		} else {
-			return "OK: java supports maxKeyLength " + maxKeyLength;
+			String msg =  "OK: java supports maxKeyLength " + maxKeyLength;
+			return rspString(msg, HttpStatus.OK);
 		}
 	}
 
 	@PostMapping("/vault/kv/string-put-secret")
 	@ApiOperation("Put key/value secret to path")
-	public String putStringSecret(
+	public ResponseEntity<String> putStringSecret(
 			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credentials") @RequestParam String path,
 			@ApiParam(value = "secret key", required = true, example = "admin") @RequestParam String key,
 			@ApiParam(value = "secret value", required = true, example = "password") @RequestParam String value)
@@ -78,29 +82,32 @@ public class RestCtlr {
 		LOG.info("RestApi: PUT-STRING-SECRET   ");
 		KeyValuePair secret = new KeyValuePair(key, value);
 		vaultSecretsService.putSecret(path, (Object) secret);
-		return "Put string secret successful";
+		String msg = "Set secret on path: " + path + " and key: " + key;
+		return rspString(msg, HttpStatus.OK);
 	}
 
 	@PostMapping("/vault/kv/string-get-secret")
 	@ApiOperation("Get key/value secret from path")
-	public String getStringSecret(
+	public ResponseEntity<String> getStringSecret(
 			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-credentials") @RequestParam String path)
 			throws URISyntaxException {
 		LOG.info("RestApi: GET-STRING-SECRET   ");
 		KeyValuePair secret = vaultSecretsService.getSecret(path, KeyValuePair.class);
-		return "Got string secret ... " + secret;
+		String msg = "String secret at path: " + path + "is "+ secret;
+		return rspString(msg, HttpStatus.OK);
 	}
 
 	@PostMapping("/vault/kv/file-put-secret")
 	@ApiOperation("Put key/file secret to path")
-	public String putFileSecret(
+	public ResponseEntity<String> putFileSecret(
 			@ApiParam(value = "vault path for secret", required = true, example = "secret/my-certificates") @RequestParam String path,
 			@ApiParam(value = "secret key", required = true, example = "my-private-key.asc") @RequestParam String key,
 			@ApiParam(value = "file to store in secret", required = true) @RequestPart(value = "file") MultipartFile file)
 			throws URISyntaxException, IOException {
 		LOG.info("RestApi: PUT-FILE-SECRET   ");
 		vaultSecretsService.putSecretFile(path, key, file.getBytes());
-		return "Put file secret successful";
+		String msg = "Set secret on path: " + path + " and key: " + key;
+		return rspString(msg, HttpStatus.OK);
 	}
 
 	@PostMapping("/vault/file/get-secret")
@@ -111,49 +118,44 @@ public class RestCtlr {
 			throws URISyntaxException {
 		LOG.info("RestApi: GET-FILE-SECRET   ");
 		byte[] result = vaultSecretsService.gettSecretFile(path, key);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-Type", "application/octet-stream");
-        headers.add("Content-Disposition", "attachment; filename=" + key);
-
-		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(result));
-		headers.setContentLength(result.length);
-		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+		return rspFile(key, result, HttpStatus.OK);
 	}
+
+
 
 	@PostMapping("/cos/string-upload")
 	@ApiOperation("Upload string to cos bucket with key")
-	public String uploadString(
+	public ResponseEntity<String> uploadString(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-key") @RequestParam String key,
 		@ApiParam(value = "data string to store", required = true, example = "hello world") @RequestParam String data)
 			throws URISyntaxException, IOException {
 		LOG.info("RestApi: COS-STRING-UPLOAD   ");
 		String result = minioS3Client.uploadBytes(bucket, key, data.getBytes());
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/string-download")
 	@ApiOperation("Download string from cos bucket at key")
-	public String downloadString(
+	public ResponseEntity<String> downloadString(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-key") @RequestParam String key)
 			throws IOException  {
 		LOG.info("RestApi: COS-STRING DOWNLOAD   ");
 		String data = new String(minioS3Client.downloadBytes(bucket, key));
-		return data;
+		return rspString(data, HttpStatus.OK);
 	}
 
 @PostMapping("/cos/file-upload")
 	@ApiOperation("Upload file to cos bucket with key")
-	public String uploadFile(
+	public ResponseEntity<String> uploadFile(
 			@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 			@ApiParam(value = "cos bucket key", required = true, example = "my-file.pdf") @RequestParam String key,
 			@ApiParam(value = "file to store in secret", required = true) @RequestPart(value = "file") MultipartFile file)
 			throws IOException{
 		LOG.info("RestApi: COS-FILE-UPLOAD   ");
 		String result = minioS3Client.uploadBytes(bucket, key, file.getBytes());
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/file-download")
@@ -164,39 +166,32 @@ public class RestCtlr {
 			throws IOException  {
 		LOG.info("RestApi: COS-FILE-DOWNLOAD   ");
 		byte[] bytes = minioS3Client.downloadBytes(bucket, key);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-Type", "application/octet-stream");
-        headers.add("Content-Disposition", "attachment; filename=" + key);
-
-		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(bytes));
-		headers.setContentLength(bytes.length);
-		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+		return rspFile(key, bytes, HttpStatus.OK);
 	}
 
 
 	@PostMapping("/vault/transit/string-encrypt")
 	@ApiOperation("Encrypt string with vault transit keyring")
-	public String encryptStringTransit(
+	public ResponseEntity<String> encryptStringTransit(
 		@ApiParam(value = "data string to encrypt", required = true, example = "hello world") @RequestParam String data,
 		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
 	 		throws URISyntaxException {
 		LOG.info("RestApi: ENCRYPT-STRING-TRANSIT  ");
 		byte[] bytes = data.getBytes();
 		String result = vaultTransitService.encrypt(path, bytes);
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/vault/transit/string-decrypt")
 	@ApiOperation("Decrypt string with vault transit keyring")
-	public String decryptStringTransit(
+	public ResponseEntity<String> decryptStringTransit(
 		@ApiParam(value = "data string to encrypt", required = true,
 			example = "vault:v1:9Q7KWk1/W9StN/92LE5fRY8tyRP2OVtHkFXtbQD6HalbgOVdik+n0CSlDjA=") @RequestBody String data,
 		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
 		 	throws URISyntaxException {
 		LOG.info("RestApi: DECRYPT-STRING-TRANSIT   ");
 		String result = new String(vaultTransitService.decrypt(path, data));
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/vault/transit/file-encrypt")
@@ -207,15 +202,7 @@ public class RestCtlr {
 	 		throws URISyntaxException, IOException {
 		LOG.info("RestApi: ENCRYPT-FILE-TRANSIT  ");
 		byte[] bytes = file.getBytes();
-		String response = vaultTransitService.encrypt(path, bytes);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-Type", "application/octet-stream");
-		headers.add("Content-Disposition", "attachment; filename=encrypted.txt");
-
-		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response.getBytes()));
-		headers.setContentLength(response.length());
-		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+		return rspFile("encrypted.txt", bytes, HttpStatus.OK);
 	}
 
 	@PostMapping("/vault/transit/file-decrypt")
@@ -226,31 +213,24 @@ public class RestCtlr {
 		 	throws URISyntaxException, IOException {
 		LOG.info("RestApi: DECRYPT-FILE-TRANSIT   ");
 		byte[] response = vaultTransitService.decrypt(path, new String(file.getBytes()));
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-Type", "application/octet-stream");
-		headers.add("Content-Disposition", "attachment; filename=decrypted.bin");
-
-		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response));
-		headers.setContentLength(response.length);
-		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+		return rspFile("decrypted", response, HttpStatus.OK);
 	}
 
 	@PostMapping("/bouncycastle/string-encrypt")
 	@ApiOperation("Encrypt string using bouncy castle")
-	public String bcEncryptString(
+	public ResponseEntity<String> bcEncryptString(
 		@ApiParam(value = "data string to encrypt", required = true, example = "hello world") @RequestParam String data)
 			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
 		LOG.info("RestApi: BOUNCYCASTLE-ENCRYPT-STRING   ");
 		byte[] bytes = data.getBytes();
 		String response = bouncyCastleService.encrypt(bytes);
-		return response;
+		return rspString(response, HttpStatus.OK);
 	}
 
 
 	@PostMapping("/bouncycastle/string-decrypt")
 	@ApiOperation("Decrypt string using bouncy castle")
-	public String bcDecryptString(
+	public ResponseEntity<String> bcDecryptString(
 		@ApiParam(value = "data string to decrypt", required = true,
 				example = "-----BEGIN PGP MESSAGE-----" + "\n" +
 				"Version: BCPG v1.57" + "\n" +
@@ -272,7 +252,7 @@ public class RestCtlr {
 			throws NoSuchProviderException, SignatureException, IOException, PGPException {
 		LOG.info("RestApi: BOUNCYCASTLE-DECRYPT-STRING   ");
 		byte[] response = bouncyCastleService.decrypt(data);
-		return new String(response);
+		return rspString(new String(response), HttpStatus.OK);
 	}
 
 	@PostMapping("/bouncycastle/file-encrypt")
@@ -282,15 +262,7 @@ public class RestCtlr {
 			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
 		LOG.info("RestApi: BOUNCYCASTLE-ENCRYPT-FILE   ");
 		byte[] bytes = file.getBytes();
-		String response = bouncyCastleService.encrypt(bytes);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-Type", "application/octet-stream");
-		headers.add("Content-Disposition", "attachment; filename=encrypted.txt");
-
-		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response.getBytes()));
-		headers.setContentLength(response.length());
-		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+		return rspFile("encrypted.txt", bytes, HttpStatus.OK);
 	}
 
 	@PostMapping("/bouncycastle/file-decrypt")
@@ -299,42 +271,36 @@ public class RestCtlr {
 		@ApiParam(value = "file to decrypt", required = true) @RequestPart(value = "file") MultipartFile file)
 			throws NoSuchProviderException, SignatureException, IOException, PGPException {
 		LOG.info("RestApi: BOUNCYCASTLE-DECRYPT-FILE   ");
-		byte[] response = bouncyCastleService.decrypt(new String(file.getBytes()));
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-Type", "application/octet-stream");
-		headers.add("Content-Disposition", "attachment; filename=decrypted");
-
-		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(response));
-		headers.setContentLength(response.length);
-		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+		byte[] bytes = bouncyCastleService.decrypt(new String(file.getBytes()));
+		return rspFile("decrypted", bytes, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/bc/string-upload-encrypted")
 	@ApiOperation("Upload string to cos bucket + key and with data encrypted with bouncy castle before it is stored")
-	public String uploadBcStringEncrypted(
+	public ResponseEntity<String> uploadBcStringEncrypted(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-bc-encrypted") @RequestParam String key,
 		@ApiParam(value = "data string to store", required = true, example = "hello world") @RequestParam String data)
 			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
 		LOG.info("RestApi: COS-UPLOAD-BC-STRING-ENCRYPTED   ");
 		String result = minioS3Client.uploadStringBcEncrypted(bucket, key, data);
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/bc/string-download-encrypted")
 	@ApiOperation("Download string from cos bucket + key and with data decrypted with bouncy castle after it is retrieved")
-	public String downloadBcStringDecrypted(
+	public ResponseEntity<String> downloadBcStringDecrypted(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-bc-encrypted") @RequestParam String key)
 			throws IOException, NoSuchProviderException, SignatureException, PGPException  {
 				LOG.info("RestApi: COS-UPLOAD-BC-STRING-ENCRYPTED   ");
-		String data = minioS3Client.downloadStringBcEncrypted(bucket, key);
-		return data;
+		String result = minioS3Client.downloadStringBcEncrypted(bucket, key);
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/bc/file-upload-encrypted")
 	@ApiOperation("Upload file to cos bucket + key and with data encrypted with bouncy castle before it is stored")
-	public String uploadBcFileEncrypted(
+	public ResponseEntity<String> uploadBcFileEncrypted(
 			@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 			@ApiParam(value = "cos bucket key", required = true, example = "my-bc-encrypted.pdf") @RequestParam String key,
 			@ApiParam(value = "file to store in secret", required = true) @RequestPart(value = "file") MultipartFile file)
@@ -342,7 +308,7 @@ public class RestCtlr {
 			NoSuchAlgorithmException, PGPException {
 		LOG.info("RestApi: COS-UPLOAD-BC-FILE-ENCRYPTED   ");
 		String result = minioS3Client.uploadFileBcEncrypted(bucket, key, file.getBytes());
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/bc/file-download-excrypted")
@@ -353,19 +319,12 @@ public class RestCtlr {
 			throws IOException, NoSuchProviderException, SignatureException, PGPException {
 		LOG.info("RestApi: COS-UPLOAD-BC-FILE-ENCRYPTED   ");
 		byte[] bytes = minioS3Client.downloadFileBcEncrypted(bucket, key);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-Type", "application/octet-stream");
-		headers.add("Content-Disposition", "attachment; filename=" + key);
-
-		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(bytes));
-		headers.setContentLength(bytes.length);
-		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
+				return rspFile(key, bytes, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/transit/string-upload-encrypted")
 	@ApiOperation("Upload string to cos bucket + key and with data encrypted using vault transit keyring")
-	public String uploadTransitStringEncrypted(
+	public ResponseEntity<String> uploadTransitStringEncrypted(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted") @RequestParam String key,
 		@ApiParam(value = "data string to store", required = true, example = "hello world") @RequestParam String data,
@@ -373,24 +332,24 @@ public class RestCtlr {
 			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
 		LOG.info("RestApi: COS-UPLOAD-TRANSIT-ENCRYPTED   ");
 		String result = minioS3Client.uploadStringTransitEncrypted(bucket, key, data, path);
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/transit/string-download-encrypted")
 	@ApiOperation("Download string from cos bucket + key and with data decrypted using vault transit keyring")
-	public String downloadTransitStringDecrypted(
+	public ResponseEntity<String> downloadTransitStringDecrypted(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted") @RequestParam String key,
 		@ApiParam(value = "transit keyring path", required = true, example = "vault-sample") @RequestParam String path)
 			throws IOException, NoSuchProviderException, SignatureException, PGPException  {
 				LOG.info("RestApi: COS-UPLOAD-TRANSIT-ENCRYPTED   ");
-		String data = minioS3Client.downloadStringTransitEncrypted(bucket, key, path);
-		return data;
+		String result = minioS3Client.downloadStringTransitEncrypted(bucket, key, path);
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/transit/file-upload-encrypted")
 	@ApiOperation("Upload file to cos bucket + key and with data encrypted using vault transit keyring")
-	public String uploadTransitFileEncrypted(
+	public ResponseEntity<String> uploadTransitFileEncrypted(
 			@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 			@ApiParam(value = "cos bucket key", required = true, example = "my-transit-encrypted.pdf") @RequestParam String key,
 			@ApiParam(value = "file to store in secret", required = true) @RequestPart(value = "file") MultipartFile file,
@@ -399,7 +358,7 @@ public class RestCtlr {
 			NoSuchAlgorithmException, PGPException {
 		LOG.info("RestApi: COS-UPLOAD-TRANSIT-FILE-ENCRYPTED   ");
 		String result = minioS3Client.uploadFileTransitEncrypted(bucket, key, file.getBytes(), path);
-		return result;
+		return rspString(result, HttpStatus.OK);
 	}
 
 	@PostMapping("/cos/transit/file-download-excrypted")
@@ -411,11 +370,20 @@ public class RestCtlr {
 			throws IOException  {
 		LOG.info("RestApi: COS-UPLOAD-TRANSIT-FILE-ENCRYPTED   ");
 		byte[] bytes = minioS3Client.downloadFileTransitEncrypted(bucket, key, path);
+		return rspFile(key, bytes, HttpStatus.OK)
+	}
 
+
+	private ResponseEntity<String> rspString(String msg, HttpStatus status) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Type", "text/plain");
+		return new ResponseEntity<String>(msg, headers, status);
+	}
+
+	private ResponseEntity<InputStreamResource> rspFile(String name, byte[] bytes, HttpStatus status){
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("Content-Type", "application/octet-stream");
-		headers.add("Content-Disposition", "attachment; filename=" + key);
-
+        headers.add("Content-Disposition", "attachment; filename=" + name);
 		InputStreamResource inputStreamResource = new InputStreamResource(new ByteArrayInputStream(bytes));
 		headers.setContentLength(bytes.length);
 		return new ResponseEntity<InputStreamResource>(inputStreamResource, headers, HttpStatus.OK);
