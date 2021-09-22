@@ -4,7 +4,7 @@
 # ##############################################################################################################
 spring.cloud.vault:
   enabled: true
-  token: s.Q106iASbvn11NXJNKjj10YCZ
+  token: s.0fAt8ADVNewUCukQdPbDl5qa
   uri: http://127.0.0.1:8200
 
   connection-timeout: 2000
@@ -27,3 +27,20 @@ cos:
   endpoint: http://127.0.0.1:9000
   user: admin
   password: passw0rd
+
+crypto:
+  enabled: true
+  store:
+    # Supported types are PGP or PKCS12
+    type: PKCS12
+    # Set following block if type = PGP
+    pgp:
+      secretkeyring.location: classpath:garage-private-key.asc
+      passphrase: passw0rd
+      publickeyring.location: classpath:garage-public-key.asc
+    # Set following block if type = PCKS12
+    pkcs12:
+      location: classpath:keystore.p12
+      password: ZAuAtb8ajP4n2MN6eLaT
+      keyAlias: local-dev-pgp
+      keyPassword: ZAuAtb8ajP4n2MN6eLaT

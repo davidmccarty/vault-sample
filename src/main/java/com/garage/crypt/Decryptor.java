@@ -3,9 +3,15 @@ package com.garage.crypt;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+
+import com.garage.crypt.BCCrypt.BCConfig;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
@@ -17,30 +23,24 @@ public class Decryptor {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Decryptor.class);
 
-	/// TODO - move to properties
-	private String privateKeyFilePath;
-	private String passphrase;
-	private String provider = "BC";
+	private BCConfig config;
 
-	public Decryptor(String privateKeyFilePath, String passphrase) {
+	public Decryptor(BCConfig config) {
 		super();
-		this.privateKeyFilePath = privateKeyFilePath;
-		this.passphrase = passphrase;
+		this.config = config;
 	}
 
 	public byte[] decrypt(String data)
-			throws NoSuchProviderException, SignatureException, IOException, PGPException {
+			throws NoSuchProviderException, SignatureException, IOException, PGPException, UnrecoverableKeyException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
 		Security.addProvider(new BouncyCastleProvider());
 
 		// Read private PGP key from asc file
-		PGPSecretKey decryptionKey = Utils.findSecretKey(privateKeyFilePath);
-		LOG.debug("Resolved decryption key from: {} with keyId: {}", privateKeyFilePath, decryptionKey.getKeyID());
+		PGPSecretKey decryptionKey = Utils.getSecretKey(config);
 
 		ByteArrayInputStream encryptedTextInputStream = new ByteArrayInputStream(data.getBytes());
-		EncryptedInputStream encryptedInputStream = new EncryptedInputStream(encryptedTextInputStream, decryptionKey, passphrase.toCharArray(), provider);
+		EncryptedInputStream encryptedInputStream = new EncryptedInputStream(encryptedTextInputStream, decryptionKey, config.getPgpPassphrase().toCharArray(), config.getProvider());
 
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
 		int nRead;
 		byte[] b = new byte[4];
 

@@ -14,10 +14,15 @@ export VAULT_ADDR='http://127.0.0.1:8200'
 vault operator init -key-shares=1 -key-threshold=1
 
 # example output
-#  Unseal Key 1: vMWCdO8YiTYPEQdNQljjGvJR4DhkT/9d3GAF2W8jgOg=
-#  Initial Root Token: s.Q106iASbvn11NXJNKjj10YCZ
+#  Unseal Key 1: 1UZjZw//ziUtafWl4D0vO3ymvx5Tl+lPTUllc1mjxSk=
+#  Initial Root Token: s.0fAt8ADVNewUCukQdPbDl5qa
 
 # unseal vault using the token and key from previous command
 export VAULT_ADDR='http://127.0.0.1:8200'
-export VAULT_TOKEN=s.Q106iASbvn11NXJNKjj10YCZ
-vault operator unseal vMWCdO8YiTYPEQdNQljjGvJR4DhkT/9d3GAF2W8jgOg=
+export VAULT_TOKEN=s.0fAt8ADVNewUCukQdPbDl5qa
+vault operator unseal 1UZjZw//ziUtafWl4D0vO3ymvx5Tl+lPTUllc1mjxSk=
+
+# config
+vault secrets enable -path=secret/ kv
+vault secrets enable transit
+vault write -f transit/keys/vault-sample

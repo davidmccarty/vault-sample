@@ -1,6 +1,6 @@
 logging.level:
     root: INFO
-    com.garage.*: DEBUG
+    com.garage: DEBUG
 
 server:
     port: 8080

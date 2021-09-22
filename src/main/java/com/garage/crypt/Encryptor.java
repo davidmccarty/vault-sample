@@ -2,11 +2,16 @@ package com.garage.crypt;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Date;
+
+import com.garage.crypt.BCCrypt.BCConfig;
 
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -19,22 +24,19 @@ public class Encryptor {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BCCrypt.class);
 
-	// TODO - properties file for these values
-	private String encryptionPublicKey;
-	private String provider = "BC";
-	private String dummyFilename = "dummy.txt";
+	private BCConfig config;
+	private String dummyFilename = "dummy_file_name.txt";
 
-	public Encryptor(String encryptionPublicKey) {
+	public Encryptor(BCConfig config) {
 		super();
-		this.encryptionPublicKey = encryptionPublicKey;
+		this.config = config;
 	}
 
 	public String encrypt(byte[] bytes) throws IOException, PGPException, NoSuchProviderException,
-						SignatureException, NoSuchAlgorithmException {
+						SignatureException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, CertificateException {
 		Security.addProvider(new BouncyCastleProvider());
 		// Read public PGP key from asc file
-		PGPPublicKey encryptionKey = Utils.readPublicKey(encryptionPublicKey);
-		LOG.debug("Resolved encryption key from: {} with keyId: {}", encryptionPublicKey, encryptionKey.getKeyID());
+		PGPPublicKey encryptionKey = Utils.getPublicKey(config);
 
 		// Stream processing order:
 		// bytes
@@ -50,7 +52,7 @@ public class Encryptor {
 				encryptedFileOutputStream);
 
 		EncryptedOutputStream encryptedOutputStream = new EncryptedOutputStream( // true,
-				false, encryptionKey, encryptedArmoredOutputStream, provider);
+				false, encryptionKey, encryptedArmoredOutputStream, config.getProvider());
 
 		CompressedDataOutputStream compressedDataOutputStream = new CompressedDataOutputStream(encryptedOutputStream);
 

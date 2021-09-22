@@ -4,9 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 import javax.annotation.PostConstruct;
 
@@ -101,12 +104,16 @@ public class S3Client {
         return bytes;
     }
 
-    public String uploadStringBcEncrypted(String bucket, String key, String data) throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException, IOException, PGPException {
+    public String uploadStringBcEncrypted(String bucket, String key, String data)
+            throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException,
+                IOException, PGPException, UnrecoverableKeyException, KeyStoreException, CertificateException {
         String encryptedBlock = bouncyCastleService.encrypt(data.getBytes());
         return uploadBytes(bucket, key, encryptedBlock.getBytes());
     }
 
-    public String downloadStringBcEncrypted(String bucket, String key) throws NoSuchProviderException, SignatureException, IOException, PGPException {
+    public String downloadStringBcEncrypted(String bucket, String key)
+            throws NoSuchProviderException, SignatureException, IOException, PGPException,
+                UnrecoverableKeyException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
         String encryptedBlock = new String(downloadBytes(bucket, key));
         byte[] bytes = bouncyCastleService.decrypt(encryptedBlock);
         return new String(bytes);
@@ -122,12 +129,16 @@ public class S3Client {
         return new String(vaultTransitService.decrypt(path, encryptedBlock));
     }
 
-    public String uploadFileBcEncrypted(String bucket, String key, byte[] bytes) throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException, IOException, PGPException {
+    public String uploadFileBcEncrypted(String bucket, String key, byte[] bytes)
+            throws NoSuchProviderException, SignatureException, NoSuchAlgorithmException,
+                IOException, PGPException, UnrecoverableKeyException, KeyStoreException, CertificateException {
         String encryptedBlock = bouncyCastleService.encrypt(bytes);
         return uploadBytes(bucket, key, encryptedBlock.getBytes());
     }
 
-    public byte[] downloadFileBcEncrypted(String bucket, String key) throws IOException, NoSuchProviderException, SignatureException, PGPException {
+    public byte[] downloadFileBcEncrypted(String bucket, String key)
+            throws IOException, NoSuchProviderException, SignatureException, PGPException,
+                UnrecoverableKeyException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
         String encryptedBlock = new String(downloadBytes(bucket, key));
         return bouncyCastleService.decrypt(encryptedBlock);
     }

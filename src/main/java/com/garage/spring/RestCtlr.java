@@ -3,9 +3,12 @@ package com.garage.spring;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 
 import com.garage.cos.S3Client;
 import com.garage.crypt.BCCrypt;
@@ -21,7 +24,6 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -220,7 +222,8 @@ public class RestCtlr {
 	@ApiOperation("Encrypt string using bouncy castle")
 	public ResponseEntity<String> bcEncryptString(
 		@ApiParam(value = "data string to encrypt", required = true, example = "hello world") @RequestParam String data)
-			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
+			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException,
+					PGPException, UnrecoverableKeyException, KeyStoreException, CertificateException {
 		LOG.info("RestApi: BOUNCYCASTLE-ENCRYPT-STRING   ");
 		byte[] bytes = data.getBytes();
 		String response = bouncyCastleService.encrypt(bytes);
@@ -249,7 +252,8 @@ public class RestCtlr {
 				"KgtAh8VGc8AcoeAqJb8HfKz1R4mEb7Dxb08eFOO+gAsVY6kmqidWVXodQw==" + "\n" +
 				"=oQvo" + "\n" +
 				"-----END PGP MESSAGE-----") @RequestBody String data)
-			throws NoSuchProviderException, SignatureException, IOException, PGPException {
+			throws NoSuchProviderException, SignatureException, IOException, PGPException, UnrecoverableKeyException,
+					KeyStoreException, NoSuchAlgorithmException, CertificateException {
 		LOG.info("RestApi: BOUNCYCASTLE-DECRYPT-STRING   ");
 		byte[] response = bouncyCastleService.decrypt(data);
 		return rspString(new String(response), HttpStatus.OK);
@@ -259,17 +263,19 @@ public class RestCtlr {
 	@ApiOperation("Encrypt file using bouncy castle")
 	public ResponseEntity<InputStreamResource> bcEncryptFile(
 		@ApiParam(value = "file to encrypt", required = true) @RequestPart(value = "file") MultipartFile file)
-			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
+			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException,
+				UnrecoverableKeyException, KeyStoreException, CertificateException {
 		LOG.info("RestApi: BOUNCYCASTLE-ENCRYPT-FILE   ");
-		byte[] bytes = file.getBytes();
-		return rspFile("encrypted.txt", bytes, HttpStatus.OK);
+		String result = bouncyCastleService.encrypt(file.getBytes());
+		return rspFile("encrypted.txt", result.getBytes(), HttpStatus.OK);
 	}
 
 	@PostMapping("/bouncycastle/file-decrypt")
 	@ApiOperation("Decrypt file using bouncy castle")
 	public ResponseEntity<InputStreamResource>  bcDecryptFile(
 		@ApiParam(value = "file to decrypt", required = true) @RequestPart(value = "file") MultipartFile file)
-			throws NoSuchProviderException, SignatureException, IOException, PGPException {
+			throws NoSuchProviderException, SignatureException, IOException, PGPException,
+					UnrecoverableKeyException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
 		LOG.info("RestApi: BOUNCYCASTLE-DECRYPT-FILE   ");
 		byte[] bytes = bouncyCastleService.decrypt(new String(file.getBytes()));
 		return rspFile("decrypted", bytes, HttpStatus.OK);
@@ -281,7 +287,8 @@ public class RestCtlr {
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-bc-encrypted") @RequestParam String key,
 		@ApiParam(value = "data string to store", required = true, example = "hello world") @RequestParam String data)
-			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException {
+			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException, NoSuchAlgorithmException, PGPException,
+					UnrecoverableKeyException, KeyStoreException, CertificateException {
 		LOG.info("RestApi: COS-UPLOAD-BC-STRING-ENCRYPTED   ");
 		String result = minioS3Client.uploadStringBcEncrypted(bucket, key, data);
 		return rspString(result, HttpStatus.OK);
@@ -292,8 +299,9 @@ public class RestCtlr {
 	public ResponseEntity<String> downloadBcStringDecrypted(
 		@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 		@ApiParam(value = "cos bucket key", required = true, example = "my-bc-encrypted") @RequestParam String key)
-			throws IOException, NoSuchProviderException, SignatureException, PGPException  {
-				LOG.info("RestApi: COS-UPLOAD-BC-STRING-ENCRYPTED   ");
+			throws IOException, NoSuchProviderException, SignatureException, PGPException, UnrecoverableKeyException,
+				KeyStoreException, NoSuchAlgorithmException, CertificateException  {
+		LOG.info("RestApi: COS-UPLOAD-BC-STRING-ENCRYPTED   ");
 		String result = minioS3Client.downloadStringBcEncrypted(bucket, key);
 		return rspString(result, HttpStatus.OK);
 	}
@@ -305,7 +313,7 @@ public class RestCtlr {
 			@ApiParam(value = "cos bucket key", required = true, example = "my-bc-encrypted.pdf") @RequestParam String key,
 			@ApiParam(value = "file to store in secret", required = true) @RequestPart(value = "file") MultipartFile file)
 			throws URISyntaxException, IOException, NoSuchProviderException, SignatureException,
-			NoSuchAlgorithmException, PGPException {
+					NoSuchAlgorithmException, PGPException, UnrecoverableKeyException, KeyStoreException, CertificateException {
 		LOG.info("RestApi: COS-UPLOAD-BC-FILE-ENCRYPTED   ");
 		String result = minioS3Client.uploadFileBcEncrypted(bucket, key, file.getBytes());
 		return rspString(result, HttpStatus.OK);
@@ -316,7 +324,8 @@ public class RestCtlr {
 	public ResponseEntity<InputStreamResource> downloadBcFileEncrypted(
 			@ApiParam(value = "cos bucket name (clear-test or encrypted)", required = true, example = "clear-text") @RequestParam String bucket,
 			@ApiParam(value = "cos bucket key", required = true, example = "my-bc-encrypted.pdf") @RequestParam String key)
-			throws IOException, NoSuchProviderException, SignatureException, PGPException {
+			throws IOException, NoSuchProviderException, SignatureException, PGPException, UnrecoverableKeyException,
+				KeyStoreException, NoSuchAlgorithmException, CertificateException {
 		LOG.info("RestApi: COS-UPLOAD-BC-FILE-ENCRYPTED   ");
 		byte[] bytes = minioS3Client.downloadFileBcEncrypted(bucket, key);
 				return rspFile(key, bytes, HttpStatus.OK);
@@ -370,7 +379,7 @@ public class RestCtlr {
 			throws IOException  {
 		LOG.info("RestApi: COS-UPLOAD-TRANSIT-FILE-ENCRYPTED   ");
 		byte[] bytes = minioS3Client.downloadFileTransitEncrypted(bucket, key, path);
-		return rspFile(key, bytes, HttpStatus.OK)
+		return rspFile(key, bytes, HttpStatus.OK);
 	}
 
 

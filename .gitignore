@@ -3,3 +3,7 @@ ref
 target
 **.log
 **/data
+*.p12
+*.jks
+*.crt
+*.pem
